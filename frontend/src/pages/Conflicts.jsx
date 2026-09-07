@@ -1,0 +1,258 @@
+import React, { useState, useEffect } from "react";
+import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Search, ArrowRight, Cpu, Zap } from "lucide-react";
+import { api } from "../services/api";
+
+export default function Conflicts({ setActiveTab, onSelectRequestForAI }) {
+  const [conflicts, setConflicts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Interactive What-If Slot Simulator
+  const [testSection, setTestSection] = useState("A-B");
+  const [testStart, setTestStart] = useState("10:00");
+  const [testEnd, setTestEnd] = useState("12:00");
+  const [testDuration, setTestDuration] = useState(2.0);
+  const [checkResult, setCheckResult] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const loadConflicts = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getConflicts();
+      setConflicts(data);
+    } catch (err) {
+      console.error("Error loading conflicts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadConflicts();
+    handleCheckSlot(); // Initial check with the exact SIH demo conflict!
+  }, []);
+
+  const handleCheckSlot = async () => {
+    setChecking(true);
+    try {
+      const res = await api.checkSlot({
+        section_id: testSection,
+        start_time: testStart,
+        end_time: testEnd,
+        duration_hours: testDuration,
+      });
+      setCheckResult(res);
+    } catch (err) {
+      alert("Conflict check failed: " + err.message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-slate-900/90 p-5 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <AlertTriangle className="w-5 h-5" />
+            </span>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white">
+              Automated Railway Conflict Detection Engine
+            </h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+            Real-time multi-dimensional constraint validation across train schedules, simultaneous track occupancies, and interlocking corridors.
+          </p>
+        </div>
+
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-950 text-cyan-300 border border-slate-800 self-start sm:self-auto font-mono">
+          Continuous Safety Monitor
+        </span>
+      </div>
+
+      {/* Interactive Conflict Simulator (Interactive Sandbox) */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 p-6 rounded-2xl border border-cyan-500/40 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              Interactive "What-If" Block Conflict Simulator
+            </h2>
+            <p className="text-xs text-slate-400">
+              Test any proposed maintenance block window. If conflicts are detected, the AI engine will automatically locate an alternative clean window.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 block mb-1">Target Section</label>
+            <select
+              value={testSection}
+              onChange={(e) => setTestSection(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+            >
+              <option value="A-B">Section A-B (New Delhi - Ghaziabad)</option>
+              <option value="B-C">Section B-C (Ghaziabad - Aligarh)</option>
+              <option value="C-D">Section C-D (Aligarh - Kanpur)</option>
+              <option value="D-E">Section D-E (Kanpur - Prayagraj)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 block mb-1">Proposed Start Time</label>
+            <input
+              type="time"
+              value={testStart}
+              onChange={(e) => setTestStart(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-semibold text-slate-400 block mb-1">Proposed End Time</label>
+            <input
+              type="time"
+              value={testEnd}
+              onChange={(e) => setTestEnd(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={handleCheckSlot}
+              disabled={checking}
+              className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-md shadow-cyan-500/20"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>{checking ? "Scanning..." : "Scan for Conflicts"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Scan Results Banner */}
+        {checkResult && (
+          <div className="mt-4 pt-4 border-t border-slate-800 space-y-4">
+            {checkResult.has_conflict ? (
+              <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-600 space-y-3">
+                <div className="flex items-center space-x-2 text-rose-300 font-bold text-sm">
+                  <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 animate-bounce" />
+                  <span>⚠ CONFLICT DETECTED</span>
+                </div>
+
+                <div className="space-y-2">
+                  {checkResult.conflicts.map((c, i) => (
+                    <div key={i} className="p-3 bg-slate-950/80 rounded-lg border border-rose-900/60 text-xs">
+                      <p className="font-semibold text-white">
+                        "{c.conflict_reason}"
+                      </p>
+                      <p className="text-slate-400 mt-0.5">
+                        Train: <strong>{c.train_no}</strong> ({c.train_name}) • Priority: <strong className="text-rose-400">{c.priority}</strong>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Automated Alternative Time Suggestion */}
+                {checkResult.suggested_alternative && (
+                  <div className="p-3.5 bg-emerald-950/50 rounded-xl border border-emerald-500 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-emerald-400 font-mono">
+                        AI AUTOMATED ALTERNATIVE SEARCH
+                      </span>
+                      <p className="text-xs font-bold text-white mt-0.5">
+                        Clean Alternative Slot Found:{" "}
+                        <span className="text-cyan-300 font-mono text-sm">
+                          {checkResult.suggested_alternative.start_time} – {checkResult.suggested_alternative.end_time}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-300">
+                        {checkResult.suggested_alternative.reason}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (onSelectRequestForAI) onSelectRequestForAI("MR001");
+                        setActiveTab("planner");
+                      }}
+                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1 self-start sm:self-auto"
+                    >
+                      <Cpu className="w-3.5 h-3.5" />
+                      <span>Switch to AI Planner</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500 text-emerald-300 flex items-center space-x-3">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">ZERO CONFLICTS DETECTED</p>
+                  <p className="text-xs text-slate-300">
+                    Window {testStart} – {testEnd} on Section {testSection} is fully clear of train traffic and overlapping maintenance blocks.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Network Active Conflicts Scanner List */}
+      <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md">
+        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-rose-400" />
+          Network-Wide Registered Conflict Logs ({conflicts.length})
+        </h2>
+
+        <div className="space-y-3">
+          {conflicts.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-400 bg-slate-950 rounded-xl border border-slate-800">
+              No active network conflicts registered. AI block planning has resolved corridor bottlenecks.
+            </div>
+          ) : (
+            conflicts.map((c) => (
+              <div
+                key={c.conflict_id}
+                className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono font-bold text-xs text-cyan-400">{c.conflict_id}</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-xs text-slate-300 font-semibold">{c.conflict_type}</span>
+                  </div>
+
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      c.severity === "Critical"
+                        ? "bg-rose-950 text-rose-300 border border-rose-800"
+                        : "bg-amber-950 text-amber-300 border border-amber-800"
+                    }`}
+                  >
+                    {c.severity}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-200 font-medium">{c.description}</p>
+
+                <div className="pt-2 border-t border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
+                  <span>
+                    Location: <strong className="text-cyan-300">Section {c.section_id}</strong> @ {c.time}
+                  </span>
+                  <div className="text-amber-300 font-medium">
+                    Suggested Action: {c.suggested_action}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
