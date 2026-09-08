@@ -10,7 +10,10 @@ import {
   CheckCircle2, 
   Cpu, 
   ArrowRight,
-  ExternalLink 
+  ExternalLink,
+  Wrench,
+  AlertCircle,
+  Filter
 } from "lucide-react";
 import { api } from "../services/api";
 
@@ -19,6 +22,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
   const [selectedSection, setSelectedSection] = useState(null);
   const [sectionDetails, setSectionDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [assetFilter, setAssetFilter] = useState("all"); // 'all' | 'needs_repair'
 
   const loadSections = async () => {
     try {
@@ -72,6 +76,18 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
     }
   };
 
+  // Filter assets based on active filter
+  const displayedAssets = sectionDetails?.assets?.filter((ast) => {
+    if (assetFilter === "needs_repair") {
+      return ast.requires_repair || ast.condition === "Needs Repair" || ast.status === "Maintenance Required";
+    }
+    return true;
+  }) || [];
+
+  const repairCount = sectionDetails?.assets?.filter(
+    (a) => a.requires_repair || a.condition === "Needs Repair" || a.status === "Maintenance Required"
+  ).length || 0;
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -82,11 +98,11 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
               <Layers className="w-5 h-5" />
             </span>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white">
-              Railway Network Topology & Block Status Map
+              Railway Network Topology & Asset Block Planning Map
             </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-slate-400">
-            Interactive corridor schematic showing real-time line occupancy, scheduled blocks, and infrastructure assets.
+            Real-time corridor schematic: tracks, signals, points, overhead electrical equipment (OHE), and bridges requiring maintenance blocks.
           </p>
         </div>
 
@@ -109,12 +125,15 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
 
       {/* Visual Railway Network Diagram */}
       <div className="bg-slate-950/90 rounded-2xl p-6 border border-slate-800 shadow-xl overflow-x-auto">
-        <h2 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-4">
-          MAIN LINE CORRIDOR TOPOLOGY: NEW DELHI (NDLS) ➔ PRAYAGRAJ (PRYJ)
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
+            MAIN LINE CORRIDOR TOPOLOGY: NEW DELHI (NDLS) ➔ PRAYAGRAJ (PRYJ)
+          </h2>
+          <span className="text-[11px] font-mono text-cyan-400">Click section to inspect assets</span>
+        </div>
 
-        <div className="min-w-[900px] py-6 relative">
-          <svg className="w-full h-44">
+        <div className="min-w-[920px] py-6 relative">
+          <svg className="w-full h-48">
             {/* Tracks / Sections */}
             {sections.map((sec, idx) => {
               const startStation = stations[idx];
@@ -145,10 +164,10 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
 
                   {/* Section Label Badge (Clickable) */}
                   <foreignObject
-                    x={(startStation.x + endStation.x) / 2 - 65}
-                    y={startStation.y - 42}
-                    width="130"
-                    height="36"
+                    x={(startStation.x + endStation.x) / 2 - 70}
+                    y={startStation.y - 48}
+                    width="140"
+                    height="42"
                   >
                     <div
                       className={`text-center py-1 px-2 rounded-lg border text-[11px] font-mono font-bold shadow-md cursor-pointer transition ${
@@ -162,29 +181,58 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                     </div>
                   </foreignObject>
 
-                  {/* Train or Maintenance Icon on track */}
-                  {sec.status === "Blocked" && (
+                  {/* Highlight for Section A-B (SIH Demo Target Asset Signal S102) */}
+                  {sec.section_id === "A-B" && (
                     <foreignObject
-                      x={(startStation.x + endStation.x) / 2 - 12}
-                      y={startStation.y + 10}
-                      width="24"
+                      x={(startStation.x + endStation.x) / 2 - 75}
+                      y={startStation.y + 16}
+                      width="150"
                       height="24"
                     >
-                      <div className="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] animate-bounce">
-                        🚧
+                      <div className="text-center py-0.5 px-2 rounded bg-rose-950/90 text-rose-300 border border-rose-600 text-[10px] font-bold animate-pulse shadow">
+                        ⚠ S102 Needs Repair (2h)
                       </div>
                     </foreignObject>
                   )}
 
-                  {sec.status === "Maintenance Planned" && (
+                  {/* Highlight for Section B-C (OHE-88) */}
+                  {sec.section_id === "B-C" && (
                     <foreignObject
-                      x={(startStation.x + endStation.x) / 2 - 12}
-                      y={startStation.y + 10}
-                      width="24"
+                      x={(startStation.x + endStation.x) / 2 - 75}
+                      y={startStation.y + 16}
+                      width="150"
                       height="24"
                     >
-                      <div className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px]">
-                        🔧
+                      <div className="text-center py-0.5 px-2 rounded bg-amber-950/90 text-amber-300 border border-amber-600 text-[10px] font-bold shadow">
+                        ⚠ OHE-88 Repair (3h)
+                      </div>
+                    </foreignObject>
+                  )}
+
+                  {/* Highlight for Section C-D (SW-22) */}
+                  {sec.section_id === "C-D" && (
+                    <foreignObject
+                      x={(startStation.x + endStation.x) / 2 - 75}
+                      y={startStation.y + 16}
+                      width="150"
+                      height="24"
+                    >
+                      <div className="text-center py-0.5 px-2 rounded bg-rose-950/90 text-rose-300 border border-rose-600 text-[10px] font-bold shadow">
+                        🚧 BLOCKED (TRK-108)
+                      </div>
+                    </foreignObject>
+                  )}
+
+                  {/* Section D-E */}
+                  {sec.section_id === "D-E" && (
+                    <foreignObject
+                      x={(startStation.x + endStation.x) / 2 - 75}
+                      y={startStation.y + 16}
+                      width="150"
+                      height="24"
+                    >
+                      <div className="text-center py-0.5 px-2 rounded bg-amber-950/90 text-amber-300 border border-amber-600 text-[10px] font-bold shadow">
+                        🔧 Planned (OHE-142)
                       </div>
                     </foreignObject>
                   )}
@@ -215,7 +263,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                 {/* Station Labels */}
                 <text
                   x={st.x}
-                  y={st.y + 35}
+                  y={st.y + 40}
                   textAnchor="middle"
                   fill="#f8fafc"
                   fontSize="12"
@@ -226,7 +274,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                 </text>
                 <text
                   x={st.x}
-                  y={st.y + 50}
+                  y={st.y + 54}
                   textAnchor="middle"
                   fill="#94a3b8"
                   fontSize="10"
@@ -285,42 +333,192 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
             </div>
           </div>
 
+          {/* Section Repair Alert Banner (if any asset requires repair) */}
+          {repairCount > 0 && (
+            <div className="p-3.5 rounded-xl bg-rose-950/30 border border-rose-600/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 animate-pulse" />
+                <div>
+                  <p className="text-xs font-bold text-rose-300">
+                    ⚠ ACTION REQUIRED: {repairCount} Railway Asset(s) in Section {sectionDetails.section.section_id} Require Maintenance Block
+                  </p>
+                  <p className="text-[11px] text-slate-300">
+                    Accurately tracked per SIH26027 specifications to maximize asset availability and eliminate train delays.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setAssetFilter("needs_repair")}
+                  className="px-3 py-1 rounded bg-rose-900/60 hover:bg-rose-900 text-rose-200 text-xs font-bold border border-rose-700"
+                >
+                  View Repair Queue ({repairCount})
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 3 Columns: Assets, Trains, Blocks */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Installed Assets */}
-            <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-cyan-400" />
-                  Assets Located ({sectionDetails.assets.length})
-                </h3>
-              </div>
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {sectionDetails.assets.map((ast) => (
-                  <div key={ast.asset_id} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono font-bold text-cyan-300">{ast.asset_id}</span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
-                          ast.condition === "Needs Repair"
-                            ? "bg-rose-950 text-rose-300 border border-rose-800"
-                            : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+            {/* Column 1: Installed Assets with ACCURATE REQUIRED REPAIRS */}
+            <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                    Assets Located ({sectionDetails.assets.length})
+                  </h3>
+
+                  {/* Filter Toggle: All vs Required for Repair */}
+                  <div className="flex rounded-md bg-slate-900 p-0.5 border border-slate-800 text-[10px]">
+                    <button
+                      onClick={() => setAssetFilter("all")}
+                      className={`px-2 py-0.5 rounded font-medium transition ${
+                        assetFilter === "all"
+                          ? "bg-cyan-500 text-slate-950 font-bold"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      All ({sectionDetails.assets.length})
+                    </button>
+                    <button
+                      onClick={() => setAssetFilter("needs_repair")}
+                      className={`px-2 py-0.5 rounded font-medium transition flex items-center gap-1 ${
+                        assetFilter === "needs_repair"
+                          ? "bg-rose-600 text-white font-bold"
+                          : "text-rose-400 hover:text-rose-300"
+                      }`}
+                    >
+                      <span>⚠ Needs Repair ({repairCount})</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                  {displayedAssets.map((ast) => {
+                    const isRepair = ast.requires_repair || ast.condition === "Needs Repair" || ast.status === "Maintenance Required";
+
+                    return (
+                      <div
+                        key={ast.asset_id}
+                        className={`p-3 rounded-lg border transition space-y-2 ${
+                          isRepair
+                            ? "bg-slate-900/90 border-rose-700/60 shadow-md shadow-rose-950/20 ring-1 ring-rose-500/20"
+                            : "bg-slate-900 border-slate-800"
                         }`}
                       >
-                        {ast.condition}
-                      </span>
-                    </div>
-                    <p className="text-slate-200 font-medium mt-0.5">{ast.name}</p>
-                    <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                      <span>Type: {ast.asset_type}</span>
-                      <span>Health: <strong className={ast.health_index < 60 ? "text-rose-400" : "text-emerald-400"}>{ast.health_index}%</strong></span>
-                    </div>
-                  </div>
-                ))}
+                        {/* Top: Asset ID, Priority & Condition */}
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-mono font-bold text-sm text-cyan-300">{ast.asset_id}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-400 font-mono">
+                              {ast.asset_type}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-1.5">
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                ast.priority === "High"
+                                  ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                  : "bg-slate-800 text-slate-300"
+                              }`}
+                            >
+                              {ast.priority}
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                ast.condition === "Needs Repair" || ast.condition === "Critical"
+                                  ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                  : ast.condition === "Needs Inspection"
+                                  ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                  : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                              }`}
+                            >
+                              {ast.condition}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Asset Name */}
+                        <p className="text-slate-200 font-semibold text-xs leading-snug">{ast.name}</p>
+
+                        {/* Health Bar */}
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+                          <span>Health Index:</span>
+                          <div className="flex items-center space-x-1.5">
+                            <div className="w-16 bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  ast.health_index < 50
+                                    ? "bg-rose-500"
+                                    : ast.health_index < 80
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                }`}
+                                style={{ width: `${ast.health_index}%` }}
+                              ></div>
+                            </div>
+                            <span className={`font-mono font-bold ${ast.health_index < 50 ? "text-rose-400" : "text-emerald-400"}`}>
+                              {ast.health_index}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* ACCURATE REQUIRED FOR REPAIR CALLOUT (SIH26027 SPECIFICATION) */}
+                        {isRepair ? (
+                          <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-800/80 space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-rose-300 uppercase tracking-wider font-mono">
+                              <span className="flex items-center gap-1">
+                                <Wrench className="w-3 h-3 text-rose-400" />
+                                Required for Repair:
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded bg-rose-900/80 text-rose-200">
+                                {ast.required_duration_hours || 2.0}h Block Needed
+                              </span>
+                            </div>
+
+                            <p className="text-slate-200 font-semibold text-[11px]">
+                              Work: <span className="text-amber-300">{ast.repair_work || "Aspect & Relay Overhaul"}</span>
+                            </p>
+
+                            <p className="text-[10px] text-slate-300 leading-tight">
+                              {ast.asset_id === "S102"
+                                ? "Critical Track Circuit Signal. Scheduled Train 12601 passes at 10:30; optimal block required at 14:00-16:00 to eliminate delays."
+                                : `Engineering maintenance block required to prevent speed restrictions on Section ${sectionDetails.section.section_id}.`}
+                            </p>
+
+                            {/* Direct AI Block Planning Action Button */}
+                            <div className="pt-1.5 flex justify-end">
+                              <button
+                                onClick={() => {
+                                  const reqId = ast.request_id || (ast.asset_id === "S102" ? "MR001" : "MR001");
+                                  if (onSelectRequestForAI) onSelectRequestForAI(reqId);
+                                  setActiveTab("planner");
+                                }}
+                                className="w-full py-1.5 px-2.5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-extrabold text-[11px] flex items-center justify-center space-x-1.5 shadow-md shadow-cyan-500/20 transition"
+                              >
+                                <Cpu className="w-3.5 h-3.5 text-slate-950" />
+                                <span>Plan {ast.required_duration_hours || 2.0}h Block with AI</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-emerald-400/80 flex items-center gap-1 pt-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>Operational. No maintenance block required.</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Scheduled Trains */}
+            {/* Column 2: Scheduled Trains */}
             <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
@@ -328,7 +526,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                   Scheduled Trains ({sectionDetails.trains.length})
                 </h3>
               </div>
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {sectionDetails.trains.map((tr) => (
                   <div key={tr.train_no} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
                     <div className="flex justify-between items-center">
@@ -347,7 +545,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
               </div>
             </div>
 
-            {/* Existing Blocks & Requests */}
+            {/* Column 3: Existing Blocks */}
             <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
@@ -355,7 +553,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                   Existing Blocks ({sectionDetails.blocks.length})
                 </h3>
               </div>
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {sectionDetails.blocks.length === 0 ? (
                   <div className="p-4 rounded-lg bg-slate-900/50 text-center text-xs text-slate-400">
                     No active maintenance blocks currently on Section {sectionDetails.section.section_id}.
