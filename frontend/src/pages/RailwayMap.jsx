@@ -288,7 +288,7 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
         </div>
 
         <p className="text-center text-xs text-slate-400 italic">
-          💡 Click any railway section above (e.g. <strong>Section A-B</strong>) to inspect live assets, scheduled trains, and active blocks.
+          💡 Click any railway section above (e.g. <strong>Section A-B</strong>) to inspect live components, scheduled trains, and active blocks.
         </p>
       </div>
 
@@ -340,10 +340,10 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
                 <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 animate-pulse" />
                 <div>
                   <p className="text-xs font-bold text-rose-300">
-                    ⚠ ACTION REQUIRED: {repairCount} Railway Asset(s) in Section {sectionDetails.section.section_id} Require Maintenance Block
+                    ⚠ ACTION REQUIRED: {repairCount} Railway Component(s) in Section {sectionDetails.section.section_id} Require Maintenance Block
                   </p>
                   <p className="text-[11px] text-slate-300">
-                    Accurately tracked per SIH26027 specifications to maximize asset availability and eliminate train delays.
+                    Accurately tracked per SIH26027 specifications to maximize component availability and eliminate train delays.
                   </p>
                 </div>
               </div>
@@ -359,15 +359,15 @@ export default function RailwayMap({ setActiveTab, onSelectRequestForAI }) {
             </div>
           )}
 
-          {/* 3 Columns: Assets, Trains, Blocks */}
+          {/* 3 Columns: Components, Trains, Blocks */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Column 1: Installed Assets with ACCURATE REQUIRED REPAIRS */}
+            {/* Column 1: Installed Components with ACCURATE REQUIRED REPAIRS */}
             <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs font-bold text-white uppercase flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-cyan-400" />
-                    Assets Located ({sectionDetails.assets.length})
+                    Components Located ({sectionDetails.assets.length})
                   </h3>
 
                   {/* Filter Toggle: All vs Required for Repair */}

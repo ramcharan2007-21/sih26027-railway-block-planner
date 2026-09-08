@@ -174,7 +174,7 @@ export default function Requests({ onSelectRequestForAI, setActiveTab, currentUs
               <div className="mt-3">
                 <h3 className="text-sm font-bold text-white">{req.maintenance_type}</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Target Asset: <strong className="text-slate-300">{req.asset_id}</strong> ({req.asset_type})
+                  Target Component: <strong className="text-slate-300">{req.asset_id}</strong> ({req.asset_type})
                 </p>
               </div>
 
@@ -249,7 +249,7 @@ export default function Requests({ onSelectRequestForAI, setActiveTab, currentUs
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Asset ID</label>
+                  <label className="text-slate-400 font-semibold block mb-1">Component ID</label>
                   <input
                     type="text"
                     required
@@ -263,7 +263,7 @@ export default function Requests({ onSelectRequestForAI, setActiveTab, currentUs
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Asset Type</label>
+                  <label className="text-slate-400 font-semibold block mb-1">Component Type</label>
                   <select
                     value={formData.asset_type}
                     onChange={(e) => setFormData({ ...formData, asset_type: e.target.value })}

@@ -37,7 +37,7 @@ export default function Analytics() {
               <Activity className="w-5 h-5" />
             </span>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white">
-              Railway Punctuality & Asset Availability Analytics
+              Railway Punctuality & Component Availability Analytics
             </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-slate-400">
@@ -67,7 +67,7 @@ export default function Analytics() {
           color="cyan"
         />
         <MetricCard
-          title="Asset Availability"
+          title="Component Availability"
           value={`${kpis?.asset_availability_pct ?? 96.2}%`}
           subtext="+8.0% gain over 4 months"
           icon={ShieldCheck}
@@ -180,11 +180,11 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Asset Availability Trend */}
+        {/* Component Availability Trend */}
         <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            Asset Availability Trajectory (May – Sep 2026)
+            Component Availability Trajectory (May – Sep 2026)
           </h2>
 
           <div className="h-48 flex items-end justify-between gap-3 pt-4 px-2 border-b border-slate-800">
@@ -202,7 +202,7 @@ export default function Analytics() {
           </div>
 
           <p className="text-xs text-slate-400 mt-3 pt-2">
-            Continuous predictive maintenance increased overall railway asset uptime from 88.2% to <strong>96.2%</strong>.
+            Continuous predictive maintenance increased overall railway component uptime from 88.2% to <strong>96.2%</strong>.
           </p>
         </div>
       </div>

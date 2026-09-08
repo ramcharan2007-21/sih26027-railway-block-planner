@@ -70,7 +70,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this asset?")) return;
+    if (!window.confirm("Are you sure you want to delete this component?")) return;
     try {
       await api.deleteAsset(id);
       loadAssets();
@@ -109,10 +109,10 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
           <Wrench className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <div>
             <p className="font-bold text-emerald-300">
-              ENGINEERING ASSET MANAGEMENT (Active Role: {currentUser?.role}):
+              ENGINEERING COMPONENT MANAGEMENT (Active Role: {currentUser?.role}):
             </p>
             <p className="text-[11px] text-slate-300 mt-0.5">
-              You have full authority to register physical railway infrastructure, update inspection health indices, and flag defects requiring track possession blocks.
+              You have full authority to register physical railway components, update inspection health indices, and flag defects requiring track possession blocks.
             </p>
           </div>
         </div>
@@ -121,10 +121,10 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
           <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0" />
           <div>
             <p className="font-bold text-white">
-              CONTROL ROOM ASSET TELEMETRY (Read-Only Inventory):
+              CONTROL ROOM COMPONENT TELEMETRY (Read-Only Inventory):
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Physical asset registration and defect logging are performed by Senior Section Engineers (P-Way / Signals). Controllers have read-only visibility to plan blocks around asset maintenance needs.
+              Physical component registration and defect logging are performed by Senior Section Engineers (P-Way / Signals). Controllers have read-only visibility to plan blocks around component maintenance needs.
             </p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
               <Shield className="w-5 h-5" />
             </span>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white">
-              Railway Infrastructure Asset Management
+              Railway Infrastructure Component Management
             </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-slate-400">
@@ -152,7 +152,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
             className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
-            <span>Register New Asset</span>
+            <span>Register New Component</span>
           </button>
         ) : (
           <div className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-xs font-mono flex items-center space-x-2">
@@ -168,7 +168,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
           <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
           <input
             type="text"
-            placeholder="Search asset ID, type, name..."
+            placeholder="Search component ID, type, name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500"
@@ -207,8 +207,8 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/90 text-slate-400 font-semibold border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Asset ID</th>
-                <th className="py-3 px-4">Asset Name</th>
+                <th className="py-3 px-4">Component ID</th>
+                <th className="py-3 px-4">Component Name</th>
                 <th className="py-3 px-4">Type</th>
                 <th className="py-3 px-4">Section</th>
                 <th className="py-3 px-4">Condition</th>
@@ -299,14 +299,14 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
                           <button
                             onClick={() => handleOpenEdit(ast)}
                             className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
-                            title="Edit Asset"
+                            title="Edit Component"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(ast.id)}
                             className="p-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
-                            title="Delete Asset"
+                            title="Delete Component"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -331,7 +331,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-bold text-white">
-                {isEditing ? `Edit Asset ${formData.asset_id}` : "Register New Railway Asset"}
+                {isEditing ? `Edit Component ${formData.asset_id}` : "Register New Railway Component"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -344,7 +344,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Asset ID *</label>
+                  <label className="text-slate-400 font-semibold block mb-1">Component ID *</label>
                   <input
                     type="text"
                     required
@@ -356,7 +356,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Asset Name *</label>
+                  <label className="text-slate-400 font-semibold block mb-1">Component Name *</label>
                   <input
                     type="text"
                     required
@@ -370,7 +370,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Asset Type</label>
+                  <label className="text-slate-400 font-semibold block mb-1">Component Type</label>
                   <select
                     value={formData.asset_type}
                     onChange={(e) => setFormData({ ...formData, asset_type: e.target.value })}
@@ -474,7 +474,7 @@ export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser
                   type="submit"
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold"
                 >
-                  {isEditing ? "Update Asset" : "Register Asset"}
+                  {isEditing ? "Update Component" : "Register Component"}
                 </button>
               </div>
             </form>

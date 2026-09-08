@@ -17,7 +17,7 @@ export default function RoleModal({ isOpen, onClose, currentUser, setCurrentUser
       authority: "Corridor Operating Command",
       desc: "Full operational authority across corridor sections. Grants official block possessions and oversees train traffic.",
       perms: ["Approve / Reject Blocks", "Timetable Management", "Live Corridor Dispatch"],
-      denied: ["Cannot calibrate AI weights", "Cannot edit asset register"]
+      denied: ["Cannot calibrate AI weights", "Cannot edit component register"]
     },
     { 
       username: "cohost", 
@@ -27,16 +27,16 @@ export default function RoleModal({ isOpen, onClose, currentUser, setCurrentUser
       authority: "Joint Operations & Simulation",
       desc: "Joint operating authority for hackathon team & co-controllers. Performs real-time conflict simulations.",
       perms: ["Co-Approve AI Blocks", "Run Conflict Sim", "Live Telemetry Access"],
-      denied: ["Cannot calibrate AI weights", "Cannot edit asset register"]
+      denied: ["Cannot calibrate AI weights", "Cannot edit component register"]
     },
     { 
       username: "engineer", 
       name: "Vikram Patel", 
       role: "Sr. Section Engineer (P-Way)", 
       badge: "Maintenance",
-      authority: "Permanent Way & Asset Health",
+      authority: "Permanent Way & Component Health",
       desc: "Field engineering lead submitting track, OHE, and signal maintenance requisitions and inspection data.",
-      perms: ["Submit Block Requests", "Add/Edit Assets & Health", "Inspection Logs"],
+      perms: ["Submit Block Requests", "Add/Edit Components & Health", "Inspection Logs"],
       denied: ["Cannot approve blocks", "Timetable is read-only", "Cannot calibrate AI weights"]
     },
     { 

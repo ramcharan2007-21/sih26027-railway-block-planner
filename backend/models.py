@@ -188,6 +188,25 @@ class CandidateSlot(BaseModel):
     reasons: List[str]
     score_breakdown: Dict[str, Any]
 
+class PossibleRepairWindow(BaseModel):
+    slot_id: str
+    start_time: str
+    end_time: str
+    duration_hours: float
+    timeline_id: str
+    parent_gap: str
+    category: str
+    is_daylight: bool
+    is_best: bool = False
+    optimization_score: int
+    train_conflicts_count: int = 0
+    expected_delay_min: int = 0
+    preceding_traffic: str
+    next_traffic: str
+    buffer_before_min: int = 5
+    buffer_after_min: int = 5
+    reason: str
+
 class ZeroTrafficWindow(BaseModel):
     timeline_id: str
     start_time: str
@@ -204,6 +223,7 @@ class ZeroTrafficWindow(BaseModel):
     next_traffic: str
     trains_passing: int = 0
     description: str
+    possible_repair_windows: Optional[List[PossibleRepairWindow]] = []
 
 class OptimizationResult(BaseModel):
     request_id: str
@@ -217,6 +237,8 @@ class OptimizationResult(BaseModel):
     recommended_slot: CandidateSlot
     all_evaluated_slots: List[CandidateSlot]
     all_zero_traffic_windows: Optional[List[ZeroTrafficWindow]] = []
+    best_possible_window: Optional[PossibleRepairWindow] = None
+    all_possible_repair_windows: Optional[List[PossibleRepairWindow]] = []
     summary_message: str
     ai_rationale: str
 

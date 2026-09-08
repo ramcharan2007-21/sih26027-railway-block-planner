@@ -49,7 +49,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, setCurren
     { id: "planner", label: "AI Block Planner", icon: Cpu, badge: "AI" },
     { id: "map", label: "Railway Map", icon: Activity },
     { id: "trains", label: "Trains", icon: Train },
-    { id: "assets", label: "Assets", icon: Shield },
+    { id: "assets", label: "Components", icon: Shield },
     { id: "requests", label: "Requests", icon: Bell },
     { id: "availability", label: "Block Availability", icon: Clock },
     { id: "conflicts", label: "Conflicts", icon: Bell, alert: true },
@@ -76,7 +76,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, setCurren
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
-                Ministry of Railways • Automated Asset Block Planning System
+                Ministry of Railways • Automated Component Block Planning System
               </p>
             </div>
           </div>

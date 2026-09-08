@@ -126,7 +126,7 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
               )}
               {currentUser?.username === "engineer" && (
                 <span>
-                  <strong className="text-amber-400">Operating Privileges:</strong> Register railway assets, update ultrasonic testing & health indices, submit maintenance requisitions. <span className="text-rose-400 font-bold">(Block approval restricted to Controllers)</span>.
+                  <strong className="text-amber-400">Operating Privileges:</strong> Register railway components, update ultrasonic testing & health indices, submit maintenance requisitions. <span className="text-rose-400 font-bold">(Block approval restricted to Controllers)</span>.
                 </span>
               )}
               {currentUser?.username === "admin" && (
@@ -186,7 +186,7 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
           color="indigo"
         />
         <MetricCard
-          title="Asset Availability"
+          title="Component Availability"
           value={`${kpis?.asset_availability_pct ?? 94}%`}
           subtext="Safe operational index"
           icon={ShieldCheck}
@@ -252,7 +252,7 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
                       <span className="text-slate-400">Traffic: </span>
                       <span className="font-semibold text-slate-200">{sec.active_trains_count} Trains</span>
                       <span className="text-slate-600 mx-1">|</span>
-                      <span className="text-slate-400">Assets: </span>
+                      <span className="text-slate-400">Components: </span>
                       <span className="font-semibold text-slate-200">{sec.asset_count}</span>
                     </div>
 
@@ -313,7 +313,7 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
                   </div>
                   <p className="mt-1 text-xs font-semibold text-slate-200">{req.maintenance_type}</p>
                   <p className="text-[11px] text-slate-400">
-                    Asset: <strong className="text-slate-300">{req.asset_id}</strong> ({req.asset_type}) • Section:{" "}
+                    Component: <strong className="text-slate-300">{req.asset_id}</strong> ({req.asset_type}) • Section:{" "}
                     <strong className="text-slate-300">{req.section_id}</strong>
                   </p>
                   <div className="mt-2 flex items-center justify-between pt-2 border-t border-slate-800/50">
@@ -370,7 +370,7 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
               <tr>
                 <th className="py-2.5 px-3">Block ID</th>
                 <th className="py-2.5 px-3">Section</th>
-                <th className="py-2.5 px-3">Asset</th>
+                <th className="py-2.5 px-3">Component</th>
                 <th className="py-2.5 px-3">Time Window</th>
                 <th className="py-2.5 px-3">Team Assigned</th>
                 <th className="py-2.5 px-3">AI Score</th>

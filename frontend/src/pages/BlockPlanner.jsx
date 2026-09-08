@@ -34,6 +34,10 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
   const [customStartTime, setCustomStartTime] = useState("14:00");
   const [customEndTime, setCustomEndTime] = useState("16:00");
 
+  // 24-Hour Repair Windows Filter & View Mode
+  const [windowShiftFilter, setWindowShiftFilter] = useState("all"); // 'all' | 'daylight' | 'night'
+  const [windowViewMode, setWindowViewMode] = useState("all_windows"); // 'all_windows' | 'by_gap'
+
   // AI Solver Tuning Weights
   const [showWeightPanel, setShowWeightPanel] = useState(false);
   const [priorityWeight, setPriorityWeight] = useState(25);
@@ -88,6 +92,44 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
   useEffect(() => {
     handleRunOptimization(selectedReqId || "MR001");
   }, [selectedReqId]);
+
+  // Inspect a specific repair window in interactive detail & XAI breakdown
+  const handleInspectSlot = (slot) => {
+    if (!slot) return;
+    setCustomStartTime(slot.start_time);
+    setCustomEndTime(slot.end_time);
+    const matchingCandidate = optimizationResult?.all_evaluated_slots?.find(
+      (s) => s.start_time === slot.start_time && s.end_time === slot.end_time
+    );
+    if (matchingCandidate) {
+      setSelectedSlotForDetail(matchingCandidate);
+    } else {
+      setSelectedSlotForDetail({
+        slot_id: slot.slot_id || `WIN-${slot.start_time}`,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        duration_hours: slot.duration_hours || optimizationResult?.duration_hours || 2.0,
+        train_conflicts_count: slot.train_conflicts_count || 0,
+        expected_delay_min: slot.expected_delay_min || 0,
+        optimization_score: slot.optimization_score || 95,
+        is_recommended: slot.is_best || false,
+        status: "FEASIBLE",
+        conflicting_trains: [],
+        score_breakdown: {
+          base_score: 65,
+          asset_priority_bonus: 25,
+          urgency_bonus: 15,
+          conflict_penalty: 0,
+          delay_penalty: 0,
+        },
+        reasons: [
+          slot.reason || `Discovered 24h repair window (${slot.start_time} to ${slot.end_time}).`,
+          `Zero train conflicts or delays on Section ${optimizationResult?.section_id}.`,
+          `Safe clearance buffer: +${slot.buffer_before_min ?? 15}m after preceding train, +${slot.buffer_after_min ?? 15}m before next train.`,
+        ],
+      });
+    }
+  };
 
   // Handle Block Approval
   const handleApproveBlock = async (slot) => {
@@ -177,11 +219,11 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
         </div>
       </div>
 
-      {/* Target Asset & Operational Context Card */}
+      {/* Target Component & Operational Context Card */}
       {optimizationResult && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800">
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase">Target Asset</span>
+            <span className="text-[11px] font-semibold text-slate-400 uppercase">Target Component</span>
             <p className="text-sm font-bold text-white mt-0.5">{optimizationResult.asset_name}</p>
             <p className="text-xs text-slate-400 font-mono">ID: {optimizationResult.asset_id}</p>
           </div>
@@ -196,7 +238,7 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
             <p className="text-xs text-amber-400 font-semibold font-mono">{optimizationResult.duration_hours} Hours Block Required</p>
           </div>
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase">Asset Priority</span>
+            <span className="text-[11px] font-semibold text-slate-400 uppercase">Component Priority</span>
             <div className="mt-1 flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800">
                 {optimizationResult.priority} PRIORITY
@@ -416,144 +458,290 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
       )}
 
       {/* 24-Hour Zero-Traffic Timelines Discovery Hub */}
-      {optimizationResult?.all_zero_traffic_windows && optimizationResult.all_zero_traffic_windows.length > 0 && (
-        <div className="bg-slate-900/90 rounded-2xl p-5 border border-cyan-500/30 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
-            <div className="flex items-center space-x-2.5">
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                <Sparkles className="w-4 h-4" />
+      {optimizationResult?.all_zero_traffic_windows && optimizationResult.all_zero_traffic_windows.length > 0 && (() => {
+        // Collect all possible repair windows across the 24-hour cycle
+        const allPossibleWindows = (
+          optimizationResult.all_possible_repair_windows && optimizationResult.all_possible_repair_windows.length > 0
+            ? optimizationResult.all_possible_repair_windows
+            : optimizationResult.all_zero_traffic_windows.flatMap((w) => w.possible_repair_windows || [])
+        );
+
+        const bestWindow =
+          optimizationResult.best_possible_window ||
+          allPossibleWindows.find((w) => w.is_best) ||
+          allPossibleWindows[0];
+
+        const daylightCount = allPossibleWindows.filter((w) => w.is_daylight).length;
+        const nightCount = allPossibleWindows.filter((w) => !w.is_daylight).length;
+
+        const displayedWindows = allPossibleWindows.filter((w) => {
+          if (windowShiftFilter === "daylight") return w.is_daylight;
+          if (windowShiftFilter === "night") return !w.is_daylight;
+          return true;
+        });
+
+        return (
+          <div className="bg-slate-900/90 rounded-2xl p-5 border border-cyan-500/30 shadow-xl space-y-5">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+              <div className="flex items-start space-x-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 text-emerald-400 mt-0.5">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    All Discovered 24-Hour Zero-Traffic Timelines & Repair Windows (Section {optimizationResult.section_id})
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Analyzed <span className="text-cyan-300 font-bold font-mono">{optimizationResult.all_zero_traffic_windows.length} continuous zero-train corridors</span> across the 24-hour timetable to discover <span className="text-emerald-300 font-bold font-mono">{allPossibleWindows.length} viable {optimizationResult.duration_hours}h repair windows</span>. The AI evaluated all possible windows against crew readiness, lighting, and safe clearance headway to select the best possible window.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  All Discovered 24-Hour Zero-Traffic Timelines (Section {optimizationResult.section_id})
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Dynamic timetable gap analysis discovered <span className="text-cyan-300 font-bold font-mono">{optimizationResult.all_zero_traffic_windows.length} continuous zero-train windows</span> across the 24-hour timetable. You can pick and approve any viable window below.
-                </p>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <span className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  Required Block: <strong className="text-amber-400">{optimizationResult.duration_hours}h</strong>
+                </span>
+                <span className="px-3 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-800/60 text-emerald-300 font-bold">
+                  {allPossibleWindows.length} Total Windows Available
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span className="px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300">
-                Required Block: <strong className="text-amber-400">{optimizationResult.duration_hours}h</strong>
-              </span>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {optimizationResult.all_zero_traffic_windows.map((win) => {
-              const isViable = win.is_viable;
-              const isRecommendedSlot =
-                optimizationResult.recommended_slot?.start_time === win.recommended_block_start &&
-                optimizationResult.recommended_slot?.end_time === win.recommended_block_end;
-              const isCurrentlySelected =
-                selectedSlotForDetail?.start_time === win.recommended_block_start &&
-                selectedSlotForDetail?.end_time === win.recommended_block_end;
+            {/* AI Selected Best Possible Window Spotlight */}
+            {bestWindow && (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/60 via-slate-900/90 to-cyan-950/60 border-2 border-emerald-500/50 shadow-lg shadow-emerald-950/40 relative overflow-hidden">
+                <div className="absolute top-0 right-0 px-3 py-1 bg-gradient-to-l from-emerald-500 to-cyan-500 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider rounded-bl-lg flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> AI Selected Best Possible Window
+                </div>
 
-              let catIcon = <Sun className="w-3.5 h-3.5 text-amber-400" />;
-              let catBadge = "bg-amber-950/70 text-amber-300 border-amber-700/60";
-              if (win.category.includes("Early")) {
-                catIcon = <Sun className="w-3.5 h-3.5 text-orange-400" />;
-                catBadge = "bg-orange-950/70 text-orange-300 border-orange-700/60";
-              } else if (win.category.includes("Evening")) {
-                catIcon = <Moon className="w-3.5 h-3.5 text-indigo-400" />;
-                catBadge = "bg-indigo-950/70 text-indigo-300 border-indigo-700/60";
-              } else if (win.category.includes("Night")) {
-                catIcon = <Moon className="w-3.5 h-3.5 text-blue-400" />;
-                catBadge = "bg-blue-950/70 text-blue-300 border-blue-700/60";
-              }
-
-              return (
-                <div
-                  key={win.window_id}
-                  className={`p-3.5 rounded-xl border flex flex-col justify-between transition relative ${
-                    isCurrentlySelected
-                      ? "border-cyan-400 bg-cyan-950/20 ring-1 ring-cyan-400/50"
-                      : isViable
-                      ? "border-slate-800 bg-slate-950/70 hover:border-slate-700"
-                      : "border-slate-900 bg-slate-950/40 opacity-60"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1 mb-2">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${catBadge}`}>
-                        {catIcon}
-                        <span>{win.category}</span>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-400 font-mono flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" /> Global Optimum Selection
                       </span>
-
-                      {isRecommendedSlot && (
-                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 tracking-wider">
-                          Primary AI
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mb-2">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Total Zero-Train Gap</span>
-                      <p className="text-base font-mono font-bold text-white">
-                        {win.gap_start} – {win.gap_end}
-                      </p>
-                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">
-                        {win.gap_duration_hours}h continuous free ({win.gap_duration_minutes}m)
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        {bestWindow.is_daylight ? <Sun className="w-3 h-3 text-amber-400" /> : <Moon className="w-3 h-3 text-indigo-400" />}
+                        {bestWindow.category}
                       </span>
                     </div>
 
-                    <div className="p-2 rounded bg-slate-900/90 border border-slate-800 text-[11px] space-y-1 mb-3">
-                      <div className="flex justify-between items-center text-slate-300">
-                        <span className="text-slate-400">Proposed Slot:</span>
-                        <span className="font-mono font-bold text-cyan-300">
-                          {win.recommended_block_start} – {win.recommended_block_end}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 flex flex-col gap-0.5 pt-1 border-t border-slate-800">
-                        <span className="truncate" title={win.preceding_traffic}>
-                          Prev: <span className="text-slate-300">{win.preceding_traffic}</span>
-                        </span>
-                        <span className="truncate" title={win.succeeding_traffic}>
-                          Next: <span className="text-slate-300">{win.succeeding_traffic}</span>
-                        </span>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-2xl lg:text-3xl font-mono font-extrabold text-white">
+                        {bestWindow.start_time} – {bestWindow.end_time}
+                      </span>
+                      <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                        {bestWindow.duration_hours}h Duration • 0 Conflicts • 0m Delay
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                      {bestWindow.reason || `AI Selected Best Window: Peak daylight visibility, +${bestWindow.buffer_before_min}m safe clearance after preceding traffic and +${bestWindow.buffer_after_min}m before next train.`}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
+                      <span>Preceding: <strong className="text-slate-200">{bestWindow.preceding_traffic}</strong> (+{bestWindow.buffer_before_min}m headway)</span>
+                      <span>•</span>
+                      <span>Next: <strong className="text-slate-200">{bestWindow.next_traffic}</strong> (+{bestWindow.buffer_after_min}m headway)</span>
+                      <span>•</span>
+                      <span>Parent Free Gap: <strong className="text-cyan-300">{bestWindow.parent_gap}</strong></span>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
-                    {isViable ? (
-                      <>
+                  <div className="flex flex-col sm:flex-row md:flex-col items-end justify-center gap-2 shrink-0">
+                    <div className="text-right">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 block">AI Optimization Score</span>
+                      <span className="text-2xl font-mono font-extrabold text-emerald-400">
+                        {bestWindow.optimization_score}<span className="text-sm text-slate-400">/100</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => handleInspectSlot(bestWindow)}
+                        className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Inspect in Breakdown</span>
+                      </button>
+
+                      {currentUser?.username !== "engineer" && (
                         <button
-                          onClick={() => {
-                            setCustomStartTime(win.recommended_block_start);
-                            setCustomEndTime(win.recommended_block_end);
-                            const matchingCandidate = optimizationResult.all_evaluated_slots?.find(
-                              (s) => s.start_time === win.recommended_block_start && s.end_time === win.recommended_block_end
-                            );
-                            if (matchingCandidate) {
-                              setSelectedSlotForDetail(matchingCandidate);
-                            } else {
-                              setSelectedSlotForDetail({
-                                slot_id: win.window_id,
-                                start_time: win.recommended_block_start,
-                                end_time: win.recommended_block_end,
-                                duration_hours: optimizationResult.duration_hours,
-                                train_conflicts_count: 0,
-                                expected_delay_min: 0,
-                                optimization_score: 95,
-                                is_recommended: isRecommendedSlot,
-                                status: "FEASIBLE",
-                                conflicting_trains: [],
-                                score_breakdown: {
-                                  base_score: 65,
-                                  asset_priority_bonus: 25,
-                                  urgency_bonus: 15,
-                                  conflict_penalty: 0,
-                                  delay_penalty: 0,
-                                },
-                                reasons: [
-                                  `Discovered 24h zero-traffic gap (${win.gap_start} to ${win.gap_end}).`,
-                                  `Zero train conflicts or delays on Section ${optimizationResult.section_id}.`,
-                                  `Safe headway clearance before ${win.succeeding_traffic}.`,
-                                ],
-                              });
-                            }
-                          }}
+                          onClick={() => handleApproveBlock({
+                            slot_id: bestWindow.slot_id,
+                            start_time: bestWindow.start_time,
+                            end_time: bestWindow.end_time,
+                            duration_hours: bestWindow.duration_hours,
+                            train_conflicts_count: 0,
+                            expected_delay_min: 0,
+                            optimization_score: bestWindow.optimization_score,
+                            is_recommended: true,
+                            status: "FEASIBLE",
+                            conflicting_trains: [],
+                          })}
+                          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 transition transform active:scale-95"
+                        >
+                          <Check className="w-4 h-4 stroke-[3]" />
+                          <span>Approve Best Window</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* View Mode & Shift Filters Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Shift Filter:</span>
+                <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800 text-xs font-medium">
+                  <button
+                    onClick={() => setWindowShiftFilter("all")}
+                    className={`px-3 py-1 rounded-md transition ${
+                      windowShiftFilter === "all"
+                        ? "bg-cyan-500 text-slate-950 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    All Possible ({allPossibleWindows.length})
+                  </button>
+                  <button
+                    onClick={() => setWindowShiftFilter("daylight")}
+                    className={`px-3 py-1 rounded-md transition flex items-center gap-1 ${
+                      windowShiftFilter === "daylight"
+                        ? "bg-amber-500 text-slate-950 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Sun className="w-3 h-3" /> Daylight ({daylightCount})
+                  </button>
+                  <button
+                    onClick={() => setWindowShiftFilter("night")}
+                    className={`px-3 py-1 rounded-md transition flex items-center gap-1 ${
+                      windowShiftFilter === "night"
+                        ? "bg-indigo-500 text-white font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Moon className="w-3 h-3" /> Night & Twilight ({nightCount})
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Display:</span>
+                <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800 text-xs font-medium">
+                  <button
+                    onClick={() => setWindowViewMode("all_windows")}
+                    className={`px-3 py-1 rounded-md transition ${
+                      windowViewMode === "all_windows"
+                        ? "bg-slate-800 text-cyan-300 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    All 24h Repair Windows ({displayedWindows.length})
+                  </button>
+                  <button
+                    onClick={() => setWindowViewMode("by_gap")}
+                    className={`px-3 py-1 rounded-md transition ${
+                      windowViewMode === "by_gap"
+                        ? "bg-slate-800 text-cyan-300 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Grouped by Free Timelines ({optimizationResult.all_zero_traffic_windows.length})
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Display Mode 1: All 24-Hour Repair Windows Grid */}
+            {windowViewMode === "all_windows" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                {displayedWindows.map((slot) => {
+                  const isBest = slot.is_best || slot.slot_id === bestWindow?.slot_id;
+                  const isCurrentlySelected =
+                    selectedSlotForDetail?.start_time === slot.start_time &&
+                    selectedSlotForDetail?.end_time === slot.end_time;
+
+                  let catBadge = "bg-amber-950/70 text-amber-300 border-amber-700/60";
+                  let catIcon = <Sun className="w-3 h-3 text-amber-400" />;
+                  if (slot.category.includes("Night")) {
+                    catBadge = "bg-blue-950/70 text-blue-300 border-blue-700/60";
+                    catIcon = <Moon className="w-3 h-3 text-blue-400" />;
+                  } else if (slot.category.includes("Evening")) {
+                    catBadge = "bg-indigo-950/70 text-indigo-300 border-indigo-700/60";
+                    catIcon = <Moon className="w-3 h-3 text-indigo-400" />;
+                  } else if (slot.category.includes("Early")) {
+                    catBadge = "bg-orange-950/70 text-orange-300 border-orange-700/60";
+                    catIcon = <Sun className="w-3 h-3 text-orange-400" />;
+                  }
+
+                  return (
+                    <div
+                      key={slot.slot_id}
+                      className={`p-3.5 rounded-xl border flex flex-col justify-between transition relative ${
+                        isBest
+                          ? "border-emerald-500/80 bg-emerald-950/20 ring-1 ring-emerald-500/40 shadow-lg shadow-emerald-950/30"
+                          : isCurrentlySelected
+                          ? "border-cyan-400 bg-cyan-950/20 ring-1 ring-cyan-400/50"
+                          : "border-slate-800 bg-slate-950/70 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${catBadge}`}>
+                            {catIcon}
+                            <span>{slot.category}</span>
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            {isBest && (
+                              <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500 text-slate-950 tracking-wider">
+                                AI Best Choice
+                              </span>
+                            )}
+                            <span className="text-[10px] font-mono font-bold text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                              {slot.optimization_score} pts
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mb-2">
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Repair Window</span>
+                          <p className="text-lg font-mono font-bold text-white">
+                            {slot.start_time} – {slot.end_time}
+                          </p>
+                          <span className="text-[11px] font-mono text-cyan-400">
+                            {slot.duration_hours}h repair block • 0 conflicts
+                          </span>
+                        </div>
+
+                        <div className="p-2 rounded bg-slate-900/90 border border-slate-800 text-[10px] space-y-1 mb-3">
+                          <div className="text-slate-400">
+                            Parent Gap: <span className="font-mono text-slate-300 font-semibold">{slot.parent_gap}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-slate-400 pt-0.5 border-t border-slate-800/80">
+                            <span>Headway Clearance:</span>
+                            <span className="font-mono text-emerald-400 font-semibold">
+                              +{slot.buffer_before_min}m / +{slot.buffer_after_min}m
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-slate-400 truncate" title={slot.preceding_traffic}>
+                            Prev: <span className="text-slate-300">{slot.preceding_traffic}</span>
+                          </div>
+                          <div className="text-[9px] text-slate-400 truncate" title={slot.next_traffic}>
+                            Next: <span className="text-slate-300">{slot.next_traffic}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+                        <button
+                          onClick={() => handleInspectSlot(slot)}
                           className={`w-full py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
                             isCurrentlySelected
                               ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50"
@@ -561,44 +749,151 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
                           }`}
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
-                          <span>{isCurrentlySelected ? "Active in Breakdown" : "Inspect This Timeline"}</span>
+                          <span>{isCurrentlySelected ? "Active in Breakdown" : "Inspect Window"}</span>
                         </button>
 
                         {currentUser?.username !== "engineer" && (
                           <button
-                            onClick={() => {
-                              handleApproveBlock({
-                                slot_id: win.window_id,
-                                start_time: win.recommended_block_start,
-                                end_time: win.recommended_block_end,
-                                duration_hours: optimizationResult.duration_hours,
-                                train_conflicts_count: 0,
-                                expected_delay_min: 0,
-                                optimization_score: 95,
-                                is_recommended: isRecommendedSlot,
-                                status: "FEASIBLE",
-                                conflicting_trains: [],
-                              });
-                            }}
-                            className="w-full py-1.5 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1 transition"
+                            onClick={() => handleApproveBlock({
+                              slot_id: slot.slot_id,
+                              start_time: slot.start_time,
+                              end_time: slot.end_time,
+                              duration_hours: slot.duration_hours,
+                              train_conflicts_count: 0,
+                              expected_delay_min: 0,
+                              optimization_score: slot.optimization_score,
+                              is_recommended: isBest,
+                              status: "FEASIBLE",
+                              conflicting_trains: [],
+                            })}
+                            className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition ${
+                              isBest
+                                ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20"
+                                : "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40"
+                            }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Approve This Slot</span>
+                            <span>Approve This Window</span>
                           </button>
                         )}
-                      </>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 text-center py-1">
-                        Window too short for {optimizationResult.duration_hours}h block
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Display Mode 2: Grouped by 24h Free Timelines */}
+            {windowViewMode === "by_gap" && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {optimizationResult.all_zero_traffic_windows.map((win) => {
+                  const winPossibleSlots = win.possible_repair_windows || [];
+                  const hasBest = winPossibleSlots.some((s) => s.is_best);
+
+                  return (
+                    <div
+                      key={win.window_id}
+                      className={`p-4 rounded-xl border flex flex-col justify-between transition ${
+                        hasBest
+                          ? "border-emerald-500/60 bg-slate-950/90 ring-1 ring-emerald-500/30"
+                          : "border-slate-800 bg-slate-950/70"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-mono font-bold text-cyan-400">
+                            Corridor: {win.gap_start} – {win.gap_end}
+                          </span>
+                          <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {win.gap_duration_hours}h Continuous Free ({win.gap_duration_minutes}m)
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-400 mb-3 space-y-0.5">
+                          <div className="truncate">Preceding Train: <span className="text-slate-300">{win.preceding_traffic}</span></div>
+                          <div className="truncate">Next Train: <span className="text-slate-300">{win.succeeding_traffic}</span></div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">
+                            Possible Repair Windows in this Corridor ({winPossibleSlots.length}):
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {winPossibleSlots.map((slot) => {
+                              const isSlotBest = slot.is_best;
+                              const isCurrentlySelected =
+                                selectedSlotForDetail?.start_time === slot.start_time &&
+                                selectedSlotForDetail?.end_time === slot.end_time;
+
+                              return (
+                                <div
+                                  key={slot.slot_id}
+                                  className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between ${
+                                    isSlotBest
+                                      ? "border-emerald-500/70 bg-emerald-950/30"
+                                      : isCurrentlySelected
+                                      ? "border-cyan-400 bg-cyan-950/20"
+                                      : "border-slate-800 bg-slate-900/80"
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-mono font-bold text-white text-sm">
+                                        {slot.start_time} – {slot.end_time}
+                                      </span>
+                                      {isSlotBest && (
+                                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950">
+                                          AI Best
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
+                                      <span>Score: <strong className="text-cyan-300 font-mono">{slot.optimization_score}</strong></span>
+                                      <span>+{slot.buffer_before_min}m / +{slot.buffer_after_min}m buffer</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 pt-1.5 border-t border-slate-800">
+                                    <button
+                                      onClick={() => handleInspectSlot(slot)}
+                                      className="flex-1 py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 font-semibold flex items-center justify-center gap-1 transition"
+                                    >
+                                      <ChevronRight className="w-3 h-3" /> Inspect
+                                    </button>
+                                    {currentUser?.username !== "engineer" && (
+                                      <button
+                                        onClick={() => handleApproveBlock({
+                                          slot_id: slot.slot_id,
+                                          start_time: slot.start_time,
+                                          end_time: slot.end_time,
+                                          duration_hours: slot.duration_hours,
+                                          train_conflicts_count: 0,
+                                          expected_delay_min: 0,
+                                          optimization_score: slot.optimization_score,
+                                          is_recommended: isSlotBest,
+                                          status: "FEASIBLE",
+                                          conflicting_trains: [],
+                                        })}
+                                        className="flex-1 py-1 px-2 rounded bg-emerald-500 hover:bg-emerald-400 text-[11px] text-slate-950 font-bold flex items-center justify-center gap-1 transition"
+                                      >
+                                        <Check className="w-3 h-3" /> Approve
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* AI Multi-Objective Solver Calibration Toggle & Panel */}
       <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-4 shadow-md space-y-3">
@@ -612,7 +907,7 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
                 Multi-Objective Scoring Weights & Algorithmic Calibration
               </h3>
               <p className="text-[11px] text-slate-400">
-                Punctuality Penalty: <span className="text-rose-400 font-mono">-{delayWeight} pts/min</span> • Asset Urgency: <span className="text-cyan-400 font-mono">+{priorityWeight} pts</span> • Clearance Buffer: <span className="text-amber-400 font-mono">{bufferMins} min</span>
+                Punctuality Penalty: <span className="text-rose-400 font-mono">-{delayWeight} pts/min</span> • Component Urgency: <span className="text-cyan-400 font-mono">+{priorityWeight} pts</span> • Clearance Buffer: <span className="text-amber-400 font-mono">{bufferMins} min</span>
               </p>
             </div>
           </div>
@@ -653,7 +948,7 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
             <form onSubmit={handleRecalibrateWeights} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className={!isAdmin ? "opacity-60" : ""}>
                 <div className="flex justify-between font-semibold mb-1">
-                  <label className="text-slate-300">Asset Urgency Multiplier</label>
+                  <label className="text-slate-300">Component Urgency Multiplier</label>
                   <span className="font-mono text-cyan-400">{priorityWeight} pts</span>
                 </div>
                 <input
@@ -859,7 +1154,7 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
                 Mathematical Scoring Function:
               </p>
               <div className="p-3 bg-slate-900 rounded-lg text-xs font-mono text-slate-300 border border-slate-800">
-                Score = Asset Priority Bonus + Urgency + Window Base - (Train Conflicts × Penalty) - (Delay Minutes × Delay Penalty) - Block Overlap
+                Score = Component Priority Bonus + Urgency + Window Base - (Train Conflicts × Penalty) - (Delay Minutes × Delay Penalty) - Block Overlap
               </div>
 
               <div className="space-y-1.5 text-xs">
@@ -868,7 +1163,7 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
                   <span className="font-mono font-bold text-white">+{selectedSlotForDetail.score_breakdown?.base_score || 60}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800/80">
-                  <span className="text-slate-400">Asset Priority Bonus (High):</span>
+                  <span className="text-slate-400">Component Priority Bonus (High):</span>
                   <span className="font-mono font-bold text-emerald-400">+{selectedSlotForDetail.score_breakdown?.asset_priority_bonus || 25}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800/80">

@@ -196,7 +196,7 @@ export default function Availability() {
                 <th className="py-2.5 px-3">Block ID</th>
                 <th className="py-2.5 px-3">Linked Request</th>
                 <th className="py-2.5 px-3">Section</th>
-                <th className="py-2.5 px-3">Asset</th>
+                <th className="py-2.5 px-3">Component</th>
                 <th className="py-2.5 px-3">Window</th>
                 <th className="py-2.5 px-3">Maintenance Team</th>
                 <th className="py-2.5 px-3">AI Optimization</th>
