@@ -9,11 +9,41 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
   const [bufferMins, setBufferMins] = useState(5);
   const [savedSettings, setSavedSettings] = useState(false);
 
+  const [switchToast, setSwitchToast] = useState(null);
+
   const demoRoles = [
-    { username: "controller", name: "Rajesh Sharma", role: "Chief Section Controller", badge: "Controller" },
-    { username: "cohost", name: "Co-Host Controller (Joint Operations)", role: "Co-Host Controller", badge: "Co-Host" },
-    { username: "engineer", name: "Vikram Patel", role: "Sr. Section Engineer (P-Way)", badge: "Maintenance" },
-    { username: "admin", name: "Priya Nair", role: "System Administrator", badge: "Admin" },
+    { 
+      username: "controller", 
+      name: "Rajesh Sharma", 
+      role: "Chief Section Controller", 
+      badge: "Controller",
+      desc: "Full operational authority across corridor sections.",
+      perms: ["Approve / Reject Blocks", "Timetable Management", "Live Corridor Dispatch"]
+    },
+    { 
+      username: "cohost", 
+      name: "Co-Host Controller (Joint Operations)", 
+      role: "Co-Host Controller", 
+      badge: "Co-Host",
+      desc: "Joint operating authority for hackathon team & co-controllers.",
+      perms: ["Co-Approve AI Blocks", "Run Conflict Sim", "Live Telemetry Access"]
+    },
+    { 
+      username: "engineer", 
+      name: "Vikram Patel", 
+      role: "Sr. Section Engineer (P-Way)", 
+      badge: "Maintenance",
+      desc: "Engineering team submitting track and asset maintenance requests.",
+      perms: ["Submit Requests", "Log Asset Health", "Track Block Roster"]
+    },
+    { 
+      username: "admin", 
+      name: "Priya Nair", 
+      role: "System Administrator", 
+      badge: "Admin",
+      desc: "Calibrate AI multi-objective weights & configure CRIS integrations.",
+      perms: ["Tune AI Weights", "Database Reset", "CRIS Connector Config"]
+    },
   ];
 
   const handleSwitchUser = (user) => {
@@ -22,7 +52,8 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
       full_name: user.name,
       role: user.role,
     });
-    alert(`Switched active profile to: ${user.name} (${user.role})`);
+    setSwitchToast(`Active profile switched to: ${user.name} (${user.role})`);
+    setTimeout(() => setSwitchToast(null), 3500);
   };
 
   const handleSaveWeights = (e) => {
@@ -65,38 +96,82 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
       </div>
 
       {/* Role-Based Access Control (RBAC) */}
-      <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md">
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Key className="w-4 h-4 text-cyan-400" />
-          Active Controller Profile & Role-Based Access (RBAC)
-        </h2>
+      <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Key className="w-4 h-4 text-cyan-400" />
+              Active Controller Profile & Role-Based Access (RBAC)
+            </h2>
+            <p className="text-xs text-slate-400">
+              Click any profile to instantly assume that operational role across the system.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {switchToast && (
+            <div className="p-2 px-3 rounded-lg bg-emerald-950/80 border border-emerald-500 text-emerald-300 text-xs font-bold flex items-center space-x-2 shadow-lg animate-pulse">
+              <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>{switchToast}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {demoRoles.map((r) => {
             const isActive = currentUser?.username === r.username;
             return (
               <div
                 key={r.username}
                 onClick={() => handleSwitchUser(r)}
-                className={`p-4 rounded-xl border cursor-pointer transition ${
+                className={`p-4 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
                   isActive
-                    ? "bg-cyan-950/40 border-cyan-500 ring-2 ring-cyan-500/30"
-                    : "bg-slate-950/70 border-slate-800 hover:border-slate-700"
+                    ? "bg-cyan-950/50 border-cyan-400 ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-950/50"
+                    : "bg-slate-950/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-cyan-400">{r.badge}</span>
-                  {isActive && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500 text-slate-950">
-                      CURRENT
-                    </span>
-                  )}
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-cyan-400">{r.badge}</span>
+                    {isActive ? (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-400 text-slate-950 shadow">
+                        CURRENT ACTIVE
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 hover:text-slate-300">
+                        Click to activate
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold text-white mt-2 leading-tight">{r.name}</h3>
+                  <p className="text-[11px] text-cyan-300/80 font-mono mt-0.5">{r.role}</p>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">{r.desc}</p>
                 </div>
-                <h3 className="text-sm font-bold text-white mt-2">{r.name}</h3>
-                <p className="text-xs text-slate-400">{r.role}</p>
-                <button className="mt-3 text-xs text-cyan-400 font-semibold hover:underline">
-                  Switch to this role ➔
-                </button>
+
+                <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Capabilities:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {r.perms.map((p, i) => (
+                      <span
+                        key={i}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
+                      >
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 text-right">
+                    <button
+                      className={`text-xs font-bold transition flex items-center justify-end space-x-1 w-full ${
+                        isActive ? "text-emerald-400" : "text-cyan-400 hover:text-cyan-300 hover:underline"
+                      }`}
+                    >
+                      <span>{isActive ? "Active Profile ✓" : "Switch to this role ➔"}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}
