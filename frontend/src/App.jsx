@@ -46,6 +46,7 @@ export default function App() {
         {activeTab === "dashboard" && (
           <Dashboard
             key={`dash-${refreshKey}`}
+            currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
           />
@@ -54,6 +55,7 @@ export default function App() {
         {activeTab === "planner" && (
           <BlockPlanner
             key={`plan-${refreshKey}-${selectedReqForAI}`}
+            currentUser={currentUser}
             preselectedRequestId={selectedReqForAI}
             setActiveTab={setActiveTab}
           />
@@ -62,16 +64,20 @@ export default function App() {
         {activeTab === "map" && (
           <RailwayMap
             key={`map-${refreshKey}`}
+            currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
           />
         )}
 
-        {activeTab === "trains" && <Trains key={`trains-${refreshKey}`} />}
+        {activeTab === "trains" && (
+          <Trains key={`trains-${refreshKey}`} currentUser={currentUser} />
+        )}
 
         {activeTab === "assets" && (
           <Assets
             key={`assets-${refreshKey}`}
+            currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
           />
@@ -80,18 +86,20 @@ export default function App() {
         {activeTab === "requests" && (
           <Requests
             key={`reqs-${refreshKey}`}
+            currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
           />
         )}
 
         {activeTab === "availability" && (
-          <Availability key={`avail-${refreshKey}`} />
+          <Availability key={`avail-${refreshKey}`} currentUser={currentUser} />
         )}
 
         {activeTab === "conflicts" && (
           <Conflicts
             key={`conf-${refreshKey}`}
+            currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
           />

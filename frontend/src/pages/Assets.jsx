@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Shield, Plus, Edit2, Trash2, Search, Filter, AlertCircle, Wrench, Cpu, CheckCircle } from "lucide-react";
+import { Shield, Plus, Edit2, Trash2, Search, Filter, AlertCircle, Wrench, Cpu, CheckCircle, Lock } from "lucide-react";
 import { api } from "../services/api";
 
-export default function Assets({ onSelectRequestForAI, setActiveTab }) {
+export default function Assets({ onSelectRequestForAI, setActiveTab, currentUser }) {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+
+  const canManageAssets = currentUser?.username === "engineer" || currentUser?.username === "admin";
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,6 +103,33 @@ export default function Assets({ onSelectRequestForAI, setActiveTab }) {
 
   return (
     <div className="space-y-6">
+      {/* Role Notice Banner */}
+      {canManageAssets ? (
+        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-600/80 text-emerald-200 text-xs flex items-center space-x-3 shadow-md">
+          <Wrench className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-emerald-300">
+              ENGINEERING ASSET MANAGEMENT (Active Role: {currentUser?.role}):
+            </p>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              You have full authority to register physical railway infrastructure, update inspection health indices, and flag defects requiring track possession blocks.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-xs flex items-center space-x-3">
+          <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-white">
+              CONTROL ROOM ASSET TELEMETRY (Read-Only Inventory):
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Physical asset registration and defect logging are performed by Senior Section Engineers (P-Way / Signals). Controllers have read-only visibility to plan blocks around asset maintenance needs.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-slate-900/90 p-5 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -117,13 +146,20 @@ export default function Assets({ onSelectRequestForAI, setActiveTab }) {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Register New Asset</span>
-        </button>
+        {canManageAssets ? (
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Register New Asset</span>
+          </button>
+        ) : (
+          <div className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-xs font-mono flex items-center space-x-2">
+            <Lock className="w-3.5 h-3.5 text-slate-500" />
+            <span>Managed by Engineering SSE</span>
+          </div>
+        )}
       </div>
 
       {/* Filter and Highlights Bar */}
@@ -257,21 +293,29 @@ export default function Assets({ onSelectRequestForAI, setActiveTab }) {
                         <span className="font-mono text-xs">{ast.health_index}%</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleOpenEdit(ast)}
-                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
-                        title="Edit Asset"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(ast.id)}
-                        className="p-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
-                        title="Delete Asset"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="py-3 px-4 text-right">
+                      {canManageAssets ? (
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleOpenEdit(ast)}
+                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
+                            title="Edit Asset"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(ast.id)}
+                            className="p-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
+                            title="Delete Asset"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
+                          <Lock className="w-2.5 h-2.5 text-slate-500" /> Read Only
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );

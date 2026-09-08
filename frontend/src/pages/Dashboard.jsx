@@ -15,7 +15,7 @@ import {
 import MetricCard from "../components/MetricCard";
 import { api } from "../services/api";
 
-export default function Dashboard({ setActiveTab, onSelectRequestForAI }) {
+export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentUser }) {
   const [kpis, setKpis] = useState(null);
   const [sections, setSections] = useState([]);
   const [activeBlocks, setActiveBlocks] = useState([]);
@@ -96,6 +96,54 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI }) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Active Operational Persona & Role Privileges Banner */}
+      <div className="bg-slate-900/80 rounded-xl p-4 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-start sm:items-center space-x-3">
+          <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 mt-1 sm:mt-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">Active Profile Authority:</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-700">
+                {currentUser?.role || "Chief Section Controller"}
+              </span>
+              <span className="text-xs font-bold text-white">({currentUser?.full_name || "Rajesh Sharma"})</span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              {currentUser?.username === "controller" && (
+                <span>
+                  <strong className="text-emerald-400">Operating Privileges:</strong> Full block grant authority, train timetable dispatch, and corridor speed restriction control.
+                </span>
+              )}
+              {currentUser?.username === "cohost" && (
+                <span>
+                  <strong className="text-cyan-400">Operating Privileges:</strong> Joint operational command, co-approve AI blocks, and live conflict simulation.
+                </span>
+              )}
+              {currentUser?.username === "engineer" && (
+                <span>
+                  <strong className="text-amber-400">Operating Privileges:</strong> Register railway assets, update ultrasonic testing & health indices, submit maintenance requisitions. <span className="text-rose-400 font-bold">(Block approval restricted to Controllers)</span>.
+                </span>
+              )}
+              {currentUser?.username === "admin" && (
+                <span>
+                  <strong className="text-purple-400">Operating Privileges:</strong> Calibrate AI objective weights, full CRIS connector configuration, and demo environment reset.
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setActiveTab("settings")}
+          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 flex-shrink-0 self-end md:self-auto"
+        >
+          <span>Switch Profile in Settings</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* KPI Cards Grid */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Train as TrainIcon, Plus, Trash2, Edit2, Search, Filter, Check, X } from "lucide-react";
+import { Train as TrainIcon, Plus, Trash2, Edit2, Search, Filter, Check, X, Lock } from "lucide-react";
 import { api } from "../services/api";
 
-export default function Trains() {
+export default function Trains({ currentUser }) {
   const [trains, setTrains] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,8 +101,25 @@ export default function Trains() {
       t.destination.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const isEngineer = currentUser?.username === "engineer";
+
   return (
     <div className="space-y-6">
+      {/* Role Notice Banner for Maintenance Engineers */}
+      {isEngineer && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-600/80 text-amber-200 text-xs flex items-center space-x-3 shadow-md">
+          <Lock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-amber-300">
+              OPERATIONAL TIMETABLE - READ-ONLY (Engineering Staff):
+            </p>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              Train scheduling, priority ordering (Rajdhani vs Goods), and train additions are strictly controlled by the <strong>Traffic / Operating Department</strong> (Chief Controller). Senior Section Engineers have read-only visibility.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-slate-900/90 p-5 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -119,13 +136,20 @@ export default function Trains() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Train</span>
-        </button>
+        {isEngineer ? (
+          <div className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-xs font-mono flex items-center space-x-2">
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Timetable Managed by Traffic Dept</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Train</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Bar */}
@@ -217,20 +241,28 @@ export default function Trains() {
                   </td>
                   <td className="py-3 px-4 text-slate-400">{tr.train_type}</td>
                   <td className="py-3 px-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleOpenEdit(tr)}
-                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
-                      title="Edit Train"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tr.id)}
-                      className="p-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
-                      title="Delete Train"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {isEngineer ? (
+                      <span className="text-[10px] text-slate-500 font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                        Protected
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleOpenEdit(tr)}
+                          className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
+                          title="Edit Train"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(tr.id)}
+                          className="p-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
+                          title="Delete Train"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

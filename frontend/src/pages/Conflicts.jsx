@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Search, ArrowRight, Cpu, Zap } from "lucide-react";
 import { api } from "../services/api";
 
-export default function Conflicts({ setActiveTab, onSelectRequestForAI }) {
+export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentUser }) {
   const [conflicts, setConflicts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,9 +66,14 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI }) {
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-950 text-cyan-300 border border-slate-800 self-start sm:self-auto font-mono">
-          Continuous Safety Monitor
-        </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start sm:self-auto">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-950 text-cyan-300 border border-slate-800 font-mono">
+            Continuous Safety Monitor
+          </span>
+          <span className="px-2.5 py-1 rounded text-[11px] font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-800">
+            {currentUser?.role || "Controller"}
+          </span>
+        </div>
       </div>
 
       {/* Interactive Conflict Simulator (Interactive Sandbox) */}

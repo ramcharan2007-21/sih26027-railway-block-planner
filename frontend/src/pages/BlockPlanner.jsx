@@ -14,11 +14,12 @@ import {
   TrendingUp, 
   ChevronRight,
   ShieldCheck,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from "lucide-react";
 import { api } from "../services/api";
 
-export default function BlockPlanner({ preselectedRequestId, setActiveTab }) {
+export default function BlockPlanner({ preselectedRequestId, setActiveTab, currentUser }) {
   const [requests, setRequests] = useState([]);
   const [selectedReqId, setSelectedReqId] = useState(preselectedRequestId || "MR001");
   const [evaluating, setEvaluating] = useState(false);
@@ -278,37 +279,78 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab }) {
             </div>
           </div>
 
+          {/* Action Area: Permissions & Approval Controls */}
+          {currentUser?.username === "engineer" ? (
+            <div className="p-3.5 my-3 rounded-xl bg-amber-950/40 border border-amber-600/80 text-amber-200 text-xs flex items-center space-x-3 shadow-md">
+              <Lock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="font-bold text-amber-300">
+                  ENGINEERING ROLE ACCESS (Sr. Section Engineer - Vikram Patel):
+                </p>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  You are viewing AI slot evaluations in engineering advisory mode. Under Indian Railways operating rules, granting track possession requires <strong>Chief Section Controller</strong> or <strong>Co-Host Controller</strong> authorization.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {/* Action Buttons: [APPROVE BLOCK], [MODIFY], [REJECT] */}
           <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-800 gap-3">
             <div className="text-xs text-slate-400 font-mono">
-              Action Required by Chief Section Controller
+              Action Authority:{" "}
+              <span className="font-bold text-cyan-300">
+                {currentUser?.role || "Chief Section Controller"}
+              </span>
             </div>
 
             <div className="flex items-center space-x-3">
-              <button
-                onClick={handleRejectBlock}
-                className="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 hover:border-rose-700 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>REJECT</span>
-              </button>
+              {currentUser?.username === "engineer" ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-slate-500 font-mono flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" /> Approval Locked
+                  </span>
+                  <button
+                    disabled
+                    className="px-5 py-2.5 rounded-lg bg-slate-800/80 text-slate-500 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 cursor-not-allowed opacity-60"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>REQUIRES CONTROLLER AUTHORITY</span>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRejectBlock}
+                    className="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 hover:border-rose-700 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>REJECT</span>
+                  </button>
 
-              <button
-                onClick={() => setIsModifying(!isModifying)}
-                className="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>{isModifying ? "CANCEL MODIFY" : "MODIFY"}</span>
-              </button>
+                  <button
+                    onClick={() => setIsModifying(!isModifying)}
+                    className="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 transition"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>{isModifying ? "CANCEL MODIFY" : "MODIFY"}</span>
+                  </button>
 
-              <button
-                onClick={() => handleApproveBlock(optimizationResult.recommended_slot)}
-                disabled={approvalStatus?.status === "approved"}
-                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 text-xs font-extrabold flex items-center space-x-2 shadow-lg shadow-emerald-500/25 transition disabled:opacity-50"
-              >
-                <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
-                <span>APPROVE BLOCK</span>
-              </button>
+                  <button
+                    onClick={() => handleApproveBlock(optimizationResult.recommended_slot)}
+                    disabled={approvalStatus?.status === "approved"}
+                    className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 text-xs font-extrabold flex items-center space-x-2 shadow-lg shadow-emerald-500/25 transition disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
+                    <span>
+                      {currentUser?.username === "cohost"
+                        ? "CO-APPROVE BLOCK (JOINT OPS)"
+                        : currentUser?.username === "admin"
+                        ? "OVERRIDE & APPROVE (ADMIN)"
+                        : "APPROVE BLOCK"}
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

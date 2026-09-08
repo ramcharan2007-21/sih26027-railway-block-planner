@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Plus, Cpu, Trash2, Edit2, CheckCircle2, Clock, AlertTriangle, ArrowRight } from "lucide-react";
+import { Bell, Plus, Cpu, Trash2, Edit2, CheckCircle2, Clock, AlertTriangle, ArrowRight, Lock, ShieldCheck, Wrench } from "lucide-react";
 import { api } from "../services/api";
 
-export default function Requests({ onSelectRequestForAI, setActiveTab }) {
+export default function Requests({ onSelectRequestForAI, setActiveTab, currentUser }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const canManageRequests = currentUser?.username === "engineer" || currentUser?.username === "admin";
 
   const initialForm = {
     request_id: `MR${Math.floor(100 + Math.random() * 900)}`,
@@ -17,7 +19,7 @@ export default function Requests({ onSelectRequestForAI, setActiveTab }) {
     priority: "High",
     requested_date: "2026-09-08",
     status: "Pending",
-    created_by: "SSE / Signal GZB",
+    created_by: currentUser?.role || "SSE / Signal GZB",
   };
   const [formData, setFormData] = useState(initialForm);
 
@@ -41,6 +43,7 @@ export default function Requests({ onSelectRequestForAI, setActiveTab }) {
     setFormData({
       ...initialForm,
       request_id: `MR${Math.floor(100 + Math.random() * 900)}`,
+      created_by: currentUser?.role || "SSE / Signal GZB",
     });
     setIsModalOpen(true);
   };
@@ -84,13 +87,44 @@ export default function Requests({ onSelectRequestForAI, setActiveTab }) {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Maintenance Request</span>
-        </button>
+        {canManageRequests ? (
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-cyan-500/20 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Maintenance Request</span>
+          </button>
+        ) : (
+          <div className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-xs font-mono flex items-center gap-1.5 self-start sm:self-auto">
+            <Lock className="w-3.5 h-3.5 text-slate-500" />
+            <span>Requisitions initiated by Engineers</span>
+          </div>
+        )}
+      </div>
+
+      {/* Role Notice Banner */}
+      <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs flex items-center justify-between">
+        <div className="flex items-center space-x-2.5">
+          {canManageRequests ? (
+            <>
+              <Wrench className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-slate-300">
+                <strong>ENGINEERING WORKBENCH:</strong> As <strong>{currentUser?.role || "Engineer"}</strong>, you can raise new track / signal work orders and submit them for corridor planning.
+              </span>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <span className="text-slate-300">
+                <strong>OPERATIONAL DISPATCH BENCH:</strong> As <strong>{currentUser?.role || "Controller"}</strong>, you evaluate engineering requests and click <strong>Plan with AI</strong> to find conflict-free maintenance slots.
+              </span>
+            </>
+          )}
+        </div>
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800 hidden sm:inline-block">
+          Active: {currentUser?.username?.toUpperCase()}
+        </span>
       </div>
 
       {/* Requests Grid */}
@@ -172,13 +206,15 @@ export default function Requests({ onSelectRequestForAI, setActiveTab }) {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button
-                    onClick={() => handleDelete(req.id)}
-                    className="p-1.5 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
-                    title="Delete Request"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {canManageRequests && (
+                    <button
+                      onClick={() => handleDelete(req.id)}
+                      className="p-1.5 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 hover:border-rose-700 border border-slate-700"
+                      title="Delete Request"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

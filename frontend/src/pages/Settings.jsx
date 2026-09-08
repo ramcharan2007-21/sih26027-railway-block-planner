@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Shield, RefreshCw, Sliders, Database, Server, Key, CheckCircle, ExternalLink } from "lucide-react";
+import { Shield, RefreshCw, Sliders, Database, Server, Key, CheckCircle, ExternalLink, Lock } from "lucide-react";
 import { api } from "../services/api";
 
 export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
@@ -10,6 +10,7 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
   const [savedSettings, setSavedSettings] = useState(false);
 
   const [switchToast, setSwitchToast] = useState(null);
+  const isAdmin = currentUser?.username === "admin";
 
   const demoRoles = [
     { 
@@ -17,32 +18,40 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
       name: "Rajesh Sharma", 
       role: "Chief Section Controller", 
       badge: "Controller",
+      authority: "Corridor Operating Command",
       desc: "Full operational authority across corridor sections.",
-      perms: ["Approve / Reject Blocks", "Timetable Management", "Live Corridor Dispatch"]
+      perms: ["Approve / Reject Blocks", "Timetable Management", "Live Corridor Dispatch"],
+      denied: ["Cannot calibrate AI weights", "Cannot edit asset register"]
     },
     { 
       username: "cohost", 
       name: "Co-Host Controller (Joint Operations)", 
       role: "Co-Host Controller", 
       badge: "Co-Host",
+      authority: "Joint Operations & Simulation",
       desc: "Joint operating authority for hackathon team & co-controllers.",
-      perms: ["Co-Approve AI Blocks", "Run Conflict Sim", "Live Telemetry Access"]
+      perms: ["Co-Approve AI Blocks", "Run Conflict Sim", "Live Telemetry Access"],
+      denied: ["Cannot calibrate AI weights", "Cannot edit asset register"]
     },
     { 
       username: "engineer", 
       name: "Vikram Patel", 
       role: "Sr. Section Engineer (P-Way)", 
       badge: "Maintenance",
+      authority: "Permanent Way & Asset Health",
       desc: "Engineering team submitting track and asset maintenance requests.",
-      perms: ["Submit Requests", "Log Asset Health", "Track Block Roster"]
+      perms: ["Submit Block Requests", "Add/Edit Assets & Health", "Inspection Logs"],
+      denied: ["Cannot approve blocks", "Timetable is read-only", "Cannot calibrate AI weights"]
     },
     { 
       username: "admin", 
       name: "Priya Nair", 
       role: "System Administrator", 
       badge: "Admin",
+      authority: "Enterprise Governance & AI Tuning",
       desc: "Calibrate AI multi-objective weights & configure CRIS integrations.",
-      perms: ["Tune AI Weights", "Database Reset", "CRIS Connector Config"]
+      perms: ["Tune AI Penalty Weights", "Database Demo Reset", "CRIS Connector Config", "Emergency Overrides"],
+      denied: []
     },
   ];
 
@@ -147,20 +156,49 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
                   <p className="text-xs text-slate-400 mt-2 leading-relaxed">{r.desc}</p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                    Capabilities:
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {r.perms.map((p, i) => (
-                      <span
-                        key={i}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
-                      >
-                        {p}
-                      </span>
-                    ))}
+                <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Authority Level:
+                    </span>
+                    <span className="text-[11px] font-mono text-cyan-300 font-semibold block">
+                      {r.authority}
+                    </span>
                   </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                      Allowed Capabilities:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {r.perms.map((p, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60"
+                        >
+                          ✓ {p}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {r.denied && r.denied.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">
+                        Strict Restrictions:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {r.denied.map((d, i) => (
+                          <span
+                            key={i}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-rose-950/50 text-rose-400 border border-rose-900/60"
+                          >
+                            ✕ {d}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-2 text-right">
                     <button
@@ -180,13 +218,33 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
 
       {/* Optimization Tuning Parameters */}
       <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md">
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-amber-400" />
-          Optimization Engine Scoring Weights
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-amber-400" />
+            Optimization Engine Scoring Weights
+          </h2>
+          {isAdmin ? (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+              Admin Access: Calibrate Weights
+            </span>
+          ) : (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-800/50 font-mono flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Read Only (Admin Required)
+            </span>
+          )}
+        </div>
+
+        {!isAdmin && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-950/40 border border-amber-500/40 flex items-center space-x-2.5 text-amber-300 text-xs">
+            <Lock className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <span>
+              <strong>Parameters Locked:</strong> Active role (<strong>{currentUser?.role}</strong>) cannot modify AI objective penalty weights. Switch above to <strong>System Administrator (Priya Nair)</strong> to calibrate.
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSaveWeights} className="space-y-4 text-xs max-w-xl">
-          <div>
+          <div className={!isAdmin ? "opacity-50 pointer-events-none" : ""}>
             <div className="flex justify-between font-semibold mb-1">
               <label className="text-slate-300">Asset Priority Weight (Urgency Multiplier)</label>
               <span className="font-mono text-cyan-400">{priorityWeight} pts</span>
@@ -195,13 +253,14 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
               type="range"
               min="10"
               max="50"
+              disabled={!isAdmin}
               value={priorityWeight}
               onChange={(e) => setPriorityWeight(Number(e.target.value))}
-              className="w-full accent-cyan-400 bg-slate-950"
+              className="w-full accent-cyan-400 bg-slate-950 disabled:cursor-not-allowed"
             />
           </div>
 
-          <div>
+          <div className={!isAdmin ? "opacity-50 pointer-events-none" : ""}>
             <div className="flex justify-between font-semibold mb-1">
               <label className="text-slate-300">Train Delay Penalty Weight (per minute delay)</label>
               <span className="font-mono text-rose-400">-{delayWeight} pts/min</span>
@@ -211,13 +270,14 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
               min="0.5"
               max="2.5"
               step="0.1"
+              disabled={!isAdmin}
               value={delayWeight}
               onChange={(e) => setDelayWeight(Number(e.target.value))}
-              className="w-full accent-rose-400 bg-slate-950"
+              className="w-full accent-rose-400 bg-slate-950 disabled:cursor-not-allowed"
             />
           </div>
 
-          <div>
+          <div className={!isAdmin ? "opacity-50 pointer-events-none" : ""}>
             <div className="flex justify-between font-semibold mb-1">
               <label className="text-slate-300">Safety Buffer Clearance Time</label>
               <span className="font-mono text-amber-400">{bufferMins} Minutes</span>
@@ -226,19 +286,31 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
               type="range"
               min="2"
               max="15"
+              disabled={!isAdmin}
               value={bufferMins}
               onChange={(e) => setBufferMins(Number(e.target.value))}
-              className="w-full accent-amber-400 bg-slate-950"
+              className="w-full accent-amber-400 bg-slate-950 disabled:cursor-not-allowed"
             />
           </div>
 
           <div className="flex items-center space-x-3 pt-2">
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
-            >
-              Update Solver Weights
-            </button>
+            {isAdmin ? (
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition"
+              >
+                Update Solver Weights
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="px-4 py-2 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-bold flex items-center space-x-1.5 cursor-not-allowed opacity-60"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Weights Locked (Admin Only)</span>
+              </button>
+            )}
             {savedSettings && (
               <span className="text-emerald-400 font-bold text-xs flex items-center gap-1">
                 <CheckCircle className="w-3.5 h-3.5" /> Weights calibrated!
@@ -302,11 +374,25 @@ export default function Settings({ currentUser, setCurrentUser, onResetDemo }) {
 
         <button
           onClick={handleResetData}
-          disabled={resetting}
-          className="px-4 py-2.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 text-xs font-bold flex items-center space-x-1.5 transition self-start sm:self-auto"
+          disabled={resetting || !isAdmin}
+          className={`px-4 py-2.5 rounded-lg border text-xs font-bold flex items-center space-x-1.5 transition self-start sm:self-auto ${
+            isAdmin
+              ? "bg-rose-950 hover:bg-rose-900 text-rose-200 border-rose-800 shadow-lg shadow-rose-950/40"
+              : "bg-slate-900 text-slate-500 border-slate-800 cursor-not-allowed opacity-60"
+          }`}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${resetting ? "animate-spin" : ""}`} />
-          <span>{resetting ? "Resetting Database..." : "Reset All Data to Demo State"}</span>
+          {isAdmin ? (
+            <RefreshCw className={`w-3.5 h-3.5 ${resetting ? "animate-spin" : ""}`} />
+          ) : (
+            <Lock className="w-3.5 h-3.5" />
+          )}
+          <span>
+            {resetting
+              ? "Resetting Database..."
+              : isAdmin
+              ? "Reset All Data to Demo State"
+              : "Reset Locked (Admin Only)"}
+          </span>
         </button>
       </div>
     </div>
