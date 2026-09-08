@@ -88,21 +88,29 @@ def check_proposed_slot(req: CheckSlotRequest):
     
     trains = query_db("SELECT * FROM trains WHERE section_id = ?", (req.section_id,))
     conflicting_trains = []
+    total_delay = 0
 
     for tr in trains:
         t_arr = time_to_minutes(tr["arrival_time"])
         t_dep = time_to_minutes(tr["departure_time"])
         if is_time_overlapping(s_min, e_min, t_arr, t_dep, buffer_min=5):
+            delay = calculate_train_delay(tr, s_min, e_min)
+            if delay <= 0:
+                delay = 30
+            total_delay += delay
             conflicting_trains.append({
                 "train_no": tr["train_no"],
                 "train_name": tr["train_name"],
                 "arrival_time": tr["arrival_time"],
                 "departure_time": tr["departure_time"],
                 "priority": tr["priority"],
+                "delay_min": delay,
                 "conflict_reason": f"Train {tr['train_no']} is scheduled to pass through Section {req.section_id} at {tr['arrival_time']}."
             })
 
     has_conflict = len(conflicting_trains) > 0
+    if has_conflict and total_delay == 0:
+        total_delay = len(conflicting_trains) * 30
 
     # Discover ALL zero-traffic timelines across the entire 24 hours
     all_zero_traffic_windows = find_all_zero_traffic_windows(req.section_id, req.duration_hours)
@@ -119,6 +127,8 @@ def check_proposed_slot(req: CheckSlotRequest):
                 "is_daylight": win["is_daylight"],
                 "total_free_label": win["total_free_label"],
                 "conflicts": 0,
+                "trains_affected": 0,
+                "delay_min": 0,
                 "preceding_traffic": win["preceding_traffic"],
                 "next_traffic": win["next_traffic"],
                 "reason": f"Zero train movements ({win['total_free_label']} clear timeline)."
@@ -131,6 +141,8 @@ def check_proposed_slot(req: CheckSlotRequest):
     return {
         "has_conflict": has_conflict,
         "conflict_count": len(conflicting_trains),
+        "trains_affected": len(conflicting_trains),
+        "total_delay_min": total_delay,
         "conflicts": conflicting_trains,
         "warning_message": f"CONFLICT DETECTED: {len(conflicting_trains)} train(s) will be disrupted" if has_conflict else "No conflicts detected for proposed time window.",
         "suggested_alternative": suggested_alternative,

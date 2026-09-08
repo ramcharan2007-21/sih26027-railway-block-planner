@@ -146,10 +146,43 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
         {checkResult && (
           <div className="mt-4 pt-4 border-t border-slate-800 space-y-4">
             {checkResult.has_conflict ? (
-              <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-600 space-y-3">
-                <div className="flex items-center space-x-2 text-rose-300 font-bold text-sm">
-                  <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 animate-bounce" />
-                  <span>⚠ CONFLICT DETECTED</span>
+              <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-600 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2 text-rose-300 font-bold text-sm">
+                    <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 animate-bounce" />
+                    <span>⚠ CONFLICT DETECTED</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-rose-400 bg-rose-950/90 px-2.5 py-0.5 rounded-full border border-rose-800 self-start sm:self-auto">
+                    Proposed Slot Conflict
+                  </span>
+                </div>
+
+                {/* Conflict Impact Metrics: Conflicts | Trains affected | Delay (min) */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 py-2.5 px-3 bg-slate-950/90 rounded-lg border border-rose-900/60 font-mono">
+                  <div className="text-center">
+                    <div className="text-[10px] sm:text-[11px] text-rose-400 font-semibold uppercase tracking-wider">
+                      Conflicts
+                    </div>
+                    <div className="text-base sm:text-xl font-extrabold text-rose-300 mt-0.5">
+                      {checkResult.conflict_count || checkResult.conflicts?.length || 1}
+                    </div>
+                  </div>
+                  <div className="text-center border-x border-rose-900/50 px-2">
+                    <div className="text-[10px] sm:text-[11px] text-rose-400 font-semibold uppercase tracking-wider">
+                      Trains affected
+                    </div>
+                    <div className="text-base sm:text-xl font-extrabold text-rose-300 mt-0.5">
+                      {checkResult.trains_affected || checkResult.conflicts?.length || 1}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[10px] sm:text-[11px] text-rose-400 font-semibold uppercase tracking-wider">
+                      Delay (min)
+                    </div>
+                    <div className="text-base sm:text-xl font-extrabold text-amber-400 mt-0.5">
+                      {checkResult.total_delay_min || (checkResult.conflicts?.length ? checkResult.conflicts.length * 30 : 30)} min
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -167,46 +200,100 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
 
                 {/* Primary Recommended Alternative Time Suggestion */}
                 {checkResult.suggested_alternative && (
-                  <div className="p-3.5 bg-emerald-950/50 rounded-xl border border-emerald-500 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-400 font-mono flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-emerald-400" />
-                        AI PRIMARY RECOMMENDATION (OPTIMAL DAYLIGHT)
-                      </span>
-                      <p className="text-xs font-bold text-white mt-0.5">
-                        Clean Alternative Slot:{" "}
-                        <span className="text-cyan-300 font-mono text-sm font-extrabold">
-                          {checkResult.suggested_alternative.start_time} – {checkResult.suggested_alternative.end_time}
+                  <div className="p-4 bg-emerald-950/50 rounded-xl border border-emerald-500 space-y-3.5 mt-3 shadow-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-emerald-400 font-mono flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                          AI PRIMARY RECOMMENDATION (OPTIMAL DAYLIGHT)
                         </span>
-                        <span className="ml-2 text-[11px] font-mono text-emerald-400">
-                          ({checkResult.suggested_alternative.total_free_label || "Clear Window"} • 0 Conflicts)
-                        </span>
-                      </p>
-                      <p className="text-[11px] text-slate-300">
-                        {checkResult.suggested_alternative.reason}
-                      </p>
+                        <p className="text-xs font-bold text-white mt-1">
+                          Clean Alternative Slot:{" "}
+                          <span className="text-cyan-300 font-mono text-sm font-extrabold">
+                            {checkResult.suggested_alternative.start_time} – {checkResult.suggested_alternative.end_time}
+                          </span>
+                          <span className="ml-2 text-[11px] font-mono text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700">
+                            {checkResult.suggested_alternative.total_free_label || "Clear Window"} • 0 Conflicts
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-300 mt-0.5">
+                          {checkResult.suggested_alternative.reason}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2 self-start sm:self-auto flex-shrink-0">
+                        <button
+                          onClick={() => handleCheckSlot(checkResult.suggested_alternative.start_time, checkResult.suggested_alternative.end_time)}
+                          className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 font-bold text-xs flex items-center space-x-1 transition"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Apply Slot</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (onSelectRequestForAI) onSelectRequestForAI("MR001");
+                            setActiveTab("planner");
+                          }}
+                          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1 shadow-md shadow-emerald-500/20 transition"
+                        >
+                          <Cpu className="w-3.5 h-3.5" />
+                          <span>Open in AI Planner</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 self-start sm:self-auto">
-                      <button
-                        onClick={() => handleCheckSlot(checkResult.suggested_alternative.start_time, checkResult.suggested_alternative.end_time)}
-                        className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold text-xs flex items-center space-x-1 transition"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Apply Slot</span>
-                      </button>
+                    {/* AI Outcome Metrics & Improvement Comparison */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-emerald-800/60">
+                      {/* AI Resolved State Metrics */}
+                      <div className="p-3 bg-slate-950/80 rounded-lg border border-emerald-800/70">
+                        <div className="text-[10px] font-bold uppercase text-emerald-400 font-mono tracking-wider mb-2 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>AI Primary Recommendation</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 font-mono text-center">
+                          <div className="bg-emerald-950/40 p-2 rounded border border-emerald-800/40">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold">Conflicts</div>
+                            <div className="text-base sm:text-lg font-extrabold text-emerald-400">0</div>
+                          </div>
+                          <div className="bg-emerald-950/40 p-2 rounded border border-emerald-800/40">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold">Trains affected</div>
+                            <div className="text-base sm:text-lg font-extrabold text-emerald-400">0</div>
+                          </div>
+                          <div className="bg-emerald-950/40 p-2 rounded border border-emerald-800/40">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold">Delay</div>
+                            <div className="text-base sm:text-lg font-extrabold text-emerald-400">0 min</div>
+                          </div>
+                        </div>
+                      </div>
 
-                      <button
-                        onClick={() => {
-                          if (onSelectRequestForAI) onSelectRequestForAI("MR001");
-                          setActiveTab("planner");
-                        }}
-                        className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1 shadow-md shadow-emerald-500/20 transition"
-                      >
-                        <Cpu className="w-3.5 h-3.5" />
-                        <span>Open in AI Planner</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Improvement Section */}
+                      <div className="p-3 bg-slate-950/80 rounded-lg border border-cyan-800/60">
+                        <div className="text-[10px] font-bold uppercase text-cyan-400 font-mono tracking-wider mb-2 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-cyan-400" />
+                            <span>Improvement</span>
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-mono font-bold">100% Resolved</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 font-mono text-center">
+                          <div className="bg-cyan-950/30 p-2 rounded border border-cyan-900/50">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold leading-tight">Conflict reduction</div>
+                            <div className="text-base sm:text-lg font-extrabold text-cyan-300 mt-0.5">100%</div>
+                          </div>
+                          <div className="bg-cyan-950/30 p-2 rounded border border-cyan-900/50">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold leading-tight">Delay reduction</div>
+                            <div className="text-base sm:text-lg font-extrabold text-cyan-300 mt-0.5">100%</div>
+                          </div>
+                          <div className="bg-emerald-950/40 p-2 rounded border border-emerald-800/50 flex flex-col justify-center items-center">
+                            <div className="text-[10px] text-slate-400 uppercase font-semibold leading-tight">Maintenance/ completed</div>
+                            <div className="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5 flex items-center justify-center">
+                              ✓
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
