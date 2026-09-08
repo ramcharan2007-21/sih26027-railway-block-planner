@@ -16,9 +16,9 @@ export default function App() {
   const [selectedReqForAI, setSelectedReqForAI] = useState("MR001");
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState({
-    username: "controller",
-    full_name: "Rajesh Sharma",
-    role: "Chief Section Controller",
+    username: "cohost",
+    full_name: "Co-Host Controller (Joint Operations)",
+    role: "Co-Host Controller",
   });
   const [refreshKey, setRefreshKey] = useState(0);
 
