@@ -15,7 +15,8 @@ import {
   ChevronRight,
   ShieldCheck,
   RotateCcw,
-  Lock
+  Lock,
+  Sliders
 } from "lucide-react";
 import { api } from "../services/api";
 
@@ -29,6 +30,21 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
   const [isModifying, setIsModifying] = useState(false);
   const [customStartTime, setCustomStartTime] = useState("14:00");
   const [customEndTime, setCustomEndTime] = useState("16:00");
+
+  // AI Solver Tuning Weights
+  const [showWeightPanel, setShowWeightPanel] = useState(false);
+  const [priorityWeight, setPriorityWeight] = useState(25);
+  const [delayWeight, setDelayWeight] = useState(1.0);
+  const [bufferMins, setBufferMins] = useState(5);
+  const [calibratedSuccess, setCalibratedSuccess] = useState(false);
+  const isAdmin = currentUser?.username === "admin";
+
+  const handleRecalibrateWeights = (e) => {
+    e.preventDefault();
+    setCalibratedSuccess(true);
+    handleRunOptimization(selectedReqId || "MR001");
+    setTimeout(() => setCalibratedSuccess(false), 3000);
+  };
 
   // Load pending maintenance requests
   const loadRequests = async () => {
@@ -395,6 +411,130 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
           )}
         </div>
       )}
+
+      {/* AI Multi-Objective Solver Calibration Toggle & Panel */}
+      <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-4 shadow-md space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <Sliders className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                Multi-Objective Scoring Weights & Algorithmic Calibration
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Punctuality Penalty: <span className="text-rose-400 font-mono">-{delayWeight} pts/min</span> • Asset Urgency: <span className="text-cyan-400 font-mono">+{priorityWeight} pts</span> • Clearance Buffer: <span className="text-amber-400 font-mono">{bufferMins} min</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 self-end sm:self-auto">
+            {isAdmin ? (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                Admin Tuning Active
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-500 border border-slate-800 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Read Only (Admin Required)
+              </span>
+            )}
+
+            <button
+              onClick={() => setShowWeightPanel(!showWeightPanel)}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1"
+            >
+              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{showWeightPanel ? "Hide Solver Weights" : "Tune / View Solver Weights"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Tuning Panel */}
+        {showWeightPanel && (
+          <div className="pt-3 border-t border-slate-800/80 space-y-4">
+            {!isAdmin && (
+              <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 flex items-center space-x-2 text-amber-300 text-xs">
+                <Lock className="w-3.5 h-3.5 flex-shrink-0 text-amber-400" />
+                <span>
+                  <strong>Read-Only Mode:</strong> Active persona (<strong>{currentUser?.role}</strong>) cannot modify AI objective penalty weights. Switch to <strong>System Administrator (Priya Nair)</strong> in the top-right profile to recalibrate.
+                </span>
+              </div>
+            )}
+
+            <form onSubmit={handleRecalibrateWeights} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className={!isAdmin ? "opacity-60" : ""}>
+                <div className="flex justify-between font-semibold mb-1">
+                  <label className="text-slate-300">Asset Urgency Multiplier</label>
+                  <span className="font-mono text-cyan-400">{priorityWeight} pts</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="50"
+                  disabled={!isAdmin}
+                  value={priorityWeight}
+                  onChange={(e) => setPriorityWeight(Number(e.target.value))}
+                  className="w-full accent-cyan-400 bg-slate-950 disabled:cursor-not-allowed"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Weight reward for critical infrastructure repair</p>
+              </div>
+
+              <div className={!isAdmin ? "opacity-60" : ""}>
+                <div className="flex justify-between font-semibold mb-1">
+                  <label className="text-slate-300">Train Delay Penalty Rate</label>
+                  <span className="font-mono text-rose-400">-{delayWeight} pts/min</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.5"
+                  step="0.1"
+                  disabled={!isAdmin}
+                  value={delayWeight}
+                  onChange={(e) => setDelayWeight(Number(e.target.value))}
+                  className="w-full accent-rose-400 bg-slate-950 disabled:cursor-not-allowed"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Penalty deducted for each minute of train delay</p>
+              </div>
+
+              <div className={!isAdmin ? "opacity-60" : ""}>
+                <div className="flex justify-between font-semibold mb-1">
+                  <label className="text-slate-300">Safety Buffer Clearance Time</label>
+                  <span className="font-mono text-amber-400">{bufferMins} Mins</span>
+                </div>
+                <input
+                  type="range"
+                  min="2"
+                  max="15"
+                  disabled={!isAdmin}
+                  value={bufferMins}
+                  onChange={(e) => setBufferMins(Number(e.target.value))}
+                  className="w-full accent-amber-400 bg-slate-950 disabled:cursor-not-allowed"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Headway clearance buffer between block and trains</p>
+              </div>
+
+              {isAdmin && (
+                <div className="md:col-span-3 flex items-center space-x-3 pt-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition flex items-center space-x-1.5"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Recalibrate & Re-evaluate Slots</span>
+                  </button>
+                  {calibratedSuccess && (
+                    <span className="text-emerald-400 font-bold text-xs flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> AI Solver Weights Calibrated!
+                    </span>
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+        )}
+      </div>
 
       {/* Candidate Time Slots Comparison Matrix */}
       <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md">

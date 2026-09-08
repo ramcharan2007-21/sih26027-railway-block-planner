@@ -9,11 +9,12 @@ import Requests from "./pages/Requests";
 import Availability from "./pages/Availability";
 import Conflicts from "./pages/Conflicts";
 import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
+import RoleModal from "./components/RoleModal";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedReqForAI, setSelectedReqForAI] = useState("MR001");
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState({
     username: "controller",
     full_name: "Rajesh Sharma",
@@ -39,6 +40,7 @@ export default function App() {
         currentUser={currentUser}
         setCurrentUser={setCurrentUser}
         onResetDemo={handleResetDemo}
+        onOpenRoleModal={() => setIsRoleModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -49,6 +51,7 @@ export default function App() {
             currentUser={currentUser}
             setActiveTab={setActiveTab}
             onSelectRequestForAI={handleSelectRequestForAI}
+            onOpenRoleModal={() => setIsRoleModalOpen(true)}
           />
         )}
 
@@ -109,15 +112,16 @@ export default function App() {
           <Analytics key={`anal-${refreshKey}`} />
         )}
 
-        {activeTab === "settings" && (
-          <Settings
-            key={`sett-${refreshKey}`}
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            onResetDemo={handleResetDemo}
-          />
-        )}
       </main>
+
+      {/* Role-Based Access Control Modal */}
+      <RoleModal
+        isOpen={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+        onResetDemo={handleResetDemo}
+      />
 
       {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 text-xs py-4 px-6 text-center text-slate-500">

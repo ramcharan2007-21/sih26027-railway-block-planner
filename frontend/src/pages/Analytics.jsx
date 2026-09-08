@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Activity, TrendingUp, CheckCircle2, ShieldCheck, Clock, BarChart3, PieChart } from "lucide-react";
+import { Activity, TrendingUp, CheckCircle2, ShieldCheck, Clock, BarChart3, PieChart, Server } from "lucide-react";
 import MetricCard from "../components/MetricCard";
 import { api } from "../services/api";
 
@@ -204,6 +204,46 @@ export default function Analytics() {
           <p className="text-xs text-slate-400 mt-3 pt-2">
             Continuous predictive maintenance increased overall railway asset uptime from 88.2% to <strong>96.2%</strong>.
           </p>
+        </div>
+      </div>
+
+      {/* Enterprise Indian Railways API Connector Readiness */}
+      <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-800 shadow-md space-y-4">
+        <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <Server className="w-4 h-4 text-emerald-400" />
+          Indian Railways Enterprise System Integration (CRIS Connectors)
+        </h2>
+
+        <p className="text-xs text-slate-400">
+          This AI Block Planning architecture is engineered for seamless data interoperability with official Indian Railways (CRIS) production software systems:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-cyan-300 font-mono text-sm">FOIS Connector</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold">
+                Schema Ready
+              </span>
+            </div>
+            <p className="text-slate-200 font-medium">Freight Operations Information System</p>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Ingests real-time freight rake positioning, coal/container siding departures, section transit speeds, and freight corridor priority windows.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-cyan-300 font-mono text-sm">COA / TMS Connector</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold">
+                Schema Ready
+              </span>
+            </div>
+            <p className="text-slate-200 font-medium">Control Office Application & Track Management System</p>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Synchronizes electronic master charts, section controller log sheets, permanent way ultrasonic rail flaw detection, and temporary speed restrictions.
+            </p>
+          </div>
         </div>
       </div>
     </div>

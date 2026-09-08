@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Train, RefreshCw, Shield, Bell, Clock, Activity, Cpu } from "lucide-react";
 import { api } from "../services/api";
 
-export default function Navbar({ activeTab, setActiveTab, currentUser, setCurrentUser, onResetDemo }) {
+export default function Navbar({ activeTab, setActiveTab, currentUser, setCurrentUser, onResetDemo, onOpenRoleModal }) {
   const [timeStr, setTimeStr] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -54,7 +54,6 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, setCurren
     { id: "availability", label: "Block Availability", icon: Clock },
     { id: "conflicts", label: "Conflicts", icon: Bell, alert: true },
     { id: "analytics", label: "Analytics", icon: Activity },
-    { id: "settings", label: "Settings", icon: Shield },
   ];
 
   return (
@@ -169,12 +168,12 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, setCurren
                   <div className="pt-1.5 border-t border-slate-800 px-3">
                     <button
                       onClick={() => {
-                        setActiveTab("settings");
+                        if (onOpenRoleModal) onOpenRoleModal();
                         setShowUserMenu(false);
                       }}
                       className="text-[11px] text-cyan-400 hover:underline block py-0.5"
                     >
-                      Manage RBAC & Permissions in Settings ➔
+                      View Full RBAC Matrix & Role Authority ➔
                     </button>
                   </div>
                 </div>

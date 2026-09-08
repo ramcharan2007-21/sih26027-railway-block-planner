@@ -10,12 +10,13 @@ import {
   Cpu, 
   TrendingUp, 
   Layers, 
-  ShieldCheck 
+  ShieldCheck,
+  Key
 } from "lucide-react";
 import MetricCard from "../components/MetricCard";
 import { api } from "../services/api";
 
-export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentUser }) {
+export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentUser, onOpenRoleModal }) {
   const [kpis, setKpis] = useState(null);
   const [sections, setSections] = useState([]);
   const [activeBlocks, setActiveBlocks] = useState([]);
@@ -138,11 +139,11 @@ export default function Dashboard({ setActiveTab, onSelectRequestForAI, currentU
         </div>
 
         <button
-          onClick={() => setActiveTab("settings")}
-          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 flex-shrink-0 self-end md:self-auto"
+          onClick={onOpenRoleModal}
+          className="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-semibold border border-cyan-500/30 transition flex items-center space-x-1.5 flex-shrink-0 self-end md:self-auto shadow-sm"
         >
-          <span>Switch Profile in Settings</span>
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <Key className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Switch Operational Role</span>
         </button>
       </div>
 
