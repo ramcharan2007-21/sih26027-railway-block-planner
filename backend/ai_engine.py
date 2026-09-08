@@ -20,18 +20,31 @@ def is_time_overlapping(start1: int, end1: int, start2: int, end2: int, buffer_m
     """Checks if two time intervals overlap, including safety buffer."""
     return max(start1, start2 - buffer_min) < min(end1, end2 + buffer_min)
 
-def calculate_train_delay(train: Dict[str, Any], block_start: int, block_end: int) -> int:
-    """Estimates delay caused to a train by the block."""
+def calculate_train_delay(train: Dict[str, Any], block_start: int, block_end: int, include_clearance: bool = False) -> int:
+    """
+    Computes accurate real-time holding delay (in minutes) caused to a train by a maintenance block.
+    A conflicting train is held at the preceding station / loop line until the block window clears.
+    Real-time delay = Block Clearance Time - Scheduled Arrival Time.
+    """
     arr = time_to_minutes(train.get("arrival_time", "00:00"))
     dep = time_to_minutes(train.get("departure_time", "00:00"))
+    clearance_time = (block_end + 5) if include_clearance else block_end
     
-    # Train reaches inside or just before the block
+    # 1. Train arrives while block is active (block_start <= arr < block_end)
     if block_start <= arr < block_end:
-        # Train must be held until block end + 5 min safety clearance
-        delay = (block_end + 5) - arr
-        return min(max(delay, 5), 60)
+        delay = clearance_time - arr
+        return max(delay, 5)
+        
+    # 2. Train arrives before block start, but departure extends into block
     elif arr < block_start and dep > block_start:
-        return (block_end + 5) - block_start
+        delay = clearance_time - arr
+        return max(delay, 5)
+        
+    # 3. Overlap within buffer margin (e.g. within 5 min of block start)
+    elif is_time_overlapping(block_start, block_end, arr, dep, buffer_min=5):
+        delay = clearance_time - arr
+        return max(delay, 5)
+        
     return 0
 
 def evaluate_maintenance_slot(
