@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import BlockPlanner from "./pages/BlockPlanner";
@@ -11,16 +11,59 @@ import Conflicts from "./pages/Conflicts";
 import Analytics from "./pages/Analytics";
 import RoleModal from "./components/RoleModal";
 
+const ROLES_MAP = {
+  cohost: {
+    username: "cohost",
+    full_name: "Co-Host Controller (Joint Operations)",
+    role: "Co-Host Controller",
+  },
+  controller: {
+    username: "controller",
+    full_name: "Rajesh Sharma",
+    role: "Chief Section Controller",
+  },
+  engineer: {
+    username: "engineer",
+    full_name: "Vikram Patel",
+    role: "Sr. Section Engineer (P-Way)",
+  },
+  admin: {
+    username: "admin",
+    full_name: "Priya Nair",
+    role: "System Administrator",
+  },
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedReqForAI, setSelectedReqForAI] = useState("MR001");
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState({
-    username: "cohost",
-    full_name: "Co-Host Controller (Joint Operations)",
-    role: "Co-Host Controller",
-  });
+  const [currentUser, setCurrentUser] = useState(ROLES_MAP.cohost);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Initialize from URL search params on mount (?role=cohost, ?tab=planner)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get("role")?.toLowerCase();
+    const tabParam = params.get("tab")?.toLowerCase();
+
+    if (roleParam && ROLES_MAP[roleParam]) {
+      setCurrentUser(ROLES_MAP[roleParam]);
+    }
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, []);
+
+  // Synchronize current role and tab to URL search parameters for easy sharing
+  useEffect(() => {
+    if (currentUser?.username) {
+      const params = new URLSearchParams(window.location.search);
+      params.set("role", currentUser.username);
+      if (activeTab) params.set("tab", activeTab);
+      window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+    }
+  }, [currentUser, activeTab]);
 
   const handleResetDemo = () => {
     setRefreshKey((prev) => prev + 1);

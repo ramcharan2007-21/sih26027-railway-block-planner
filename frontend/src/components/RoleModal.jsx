@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Key, Shield, ShieldCheck, CheckCircle, Lock, RefreshCw, X } from "lucide-react";
+import { Key, Shield, ShieldCheck, CheckCircle, Lock, RefreshCw, X, Copy, Link2, ExternalLink } from "lucide-react";
 import { api } from "../services/api";
 
 export default function RoleModal({ isOpen, onClose, currentUser, setCurrentUser, onResetDemo }) {
@@ -116,6 +116,46 @@ export default function RoleModal({ isOpen, onClose, currentUser, setCurrentUser
             <span>{toastMsg}</span>
           </div>
         )}
+
+        {/* Direct Shareable Links for Co-Host & Controllers */}
+        <div className="bg-slate-950/90 rounded-xl p-3.5 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <span className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <Link2 className="w-4 h-4" />
+            </span>
+            <div>
+              <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                Direct Co-Host Link (Joint Operations):
+              </span>
+              <p className="text-[11px] text-slate-400 font-mono">
+                {window.location.origin}/?role=cohost
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/?role=cohost`;
+                navigator.clipboard.writeText(url);
+                setToastMsg("Co-Host direct link copied to clipboard!");
+                setTimeout(() => setToastMsg(null), 2500);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold flex items-center space-x-1.5 transition shadow"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy Co-Host Link</span>
+            </button>
+            <a
+              href={`${window.location.origin}/?role=cohost`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center space-x-1 transition"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Open in New Tab</span>
+            </a>
+          </div>
+        </div>
 
         {/* Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
