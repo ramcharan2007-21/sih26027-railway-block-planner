@@ -32,10 +32,10 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
   }, []);
 
   const handleCheckSlot = async (customStart, customEnd) => {
-    const s = customStart || testStart;
-    const e = customEnd || testEnd;
-    if (customStart) setTestStart(customStart);
-    if (customEnd) setTestEnd(customEnd);
+    const s = typeof customStart === "string" ? customStart : testStart;
+    const e = typeof customEnd === "string" ? customEnd : testEnd;
+    if (typeof customStart === "string") setTestStart(customStart);
+    if (typeof customEnd === "string") setTestEnd(customEnd);
 
     setChecking(true);
     try {
@@ -132,7 +132,7 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
 
           <div className="flex items-end">
             <button
-              onClick={handleCheckSlot}
+              onClick={() => handleCheckSlot()}
               disabled={checking}
               className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-md shadow-cyan-500/20"
             >
