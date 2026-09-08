@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
 from database import query_db
-from ai_engine import time_to_minutes, is_time_overlapping, calculate_train_delay, minutes_to_time
+from ai_engine import time_to_minutes, is_time_overlapping, calculate_train_delay, minutes_to_time, find_all_zero_traffic_windows
 from models import ConflictItem
 
 router = APIRouter(prefix="/api/conflicts", tags=["Conflict Detection"])
@@ -11,7 +11,7 @@ class CheckSlotRequest(BaseModel):
     section_id: str
     start_time: str
     end_time: str
-    duration_hours: float
+    duration_hours: Optional[float] = 2.0
 
 @router.get("", response_model=List[ConflictItem])
 def get_all_conflicts():
@@ -103,32 +103,37 @@ def check_proposed_slot(req: CheckSlotRequest):
             })
 
     has_conflict = len(conflicting_trains) > 0
-    suggested_alternative = None
 
-    if has_conflict:
-        # Search forward for a clean slot of required duration
-        duration_mins = int(req.duration_hours * 60)
-        for cand_start in range(s_min + 60, s_min + 600, 30):
-            cand_end = cand_start + duration_mins
-            cand_conflicts = 0
-            for tr in trains:
-                t_arr = time_to_minutes(tr["arrival_time"])
-                t_dep = time_to_minutes(tr["departure_time"])
-                if is_time_overlapping(cand_start, cand_end, t_arr, t_dep, buffer_min=5):
-                    cand_conflicts += 1
-            if cand_conflicts == 0:
-                suggested_alternative = {
-                    "start_time": minutes_to_time(cand_start),
-                    "end_time": minutes_to_time(cand_end),
-                    "conflicts": 0,
-                    "reason": "Clear operational window with zero train movements."
-                }
-                break
+    # Discover ALL zero-traffic timelines across the entire 24 hours
+    all_zero_traffic_windows = find_all_zero_traffic_windows(req.section_id, req.duration_hours)
+
+    suggested_alternatives = []
+    for win in all_zero_traffic_windows:
+        if win["can_fit_block"]:
+            suggested_alternatives.append({
+                "timeline_id": win["timeline_id"],
+                "start_time": win["suggested_start"],
+                "end_time": win["suggested_end"],
+                "timeline_window": f"{win['start_time']} – {win['end_time']}",
+                "category": win["category"],
+                "is_daylight": win["is_daylight"],
+                "total_free_label": win["total_free_label"],
+                "conflicts": 0,
+                "preceding_traffic": win["preceding_traffic"],
+                "next_traffic": win["next_traffic"],
+                "reason": f"Zero train movements ({win['total_free_label']} clear timeline)."
+            })
+
+    # Pick top recommended daylight slot or the first viable slot
+    daylight_alts = [a for a in suggested_alternatives if a["is_daylight"]]
+    suggested_alternative = daylight_alts[0] if daylight_alts else (suggested_alternatives[0] if suggested_alternatives else None)
 
     return {
         "has_conflict": has_conflict,
         "conflict_count": len(conflicting_trains),
         "conflicts": conflicting_trains,
         "warning_message": f"CONFLICT DETECTED: {len(conflicting_trains)} train(s) will be disrupted" if has_conflict else "No conflicts detected for proposed time window.",
-        "suggested_alternative": suggested_alternative
+        "suggested_alternative": suggested_alternative,
+        "suggested_alternatives": suggested_alternatives,
+        "all_clean_windows": all_zero_traffic_windows
     }

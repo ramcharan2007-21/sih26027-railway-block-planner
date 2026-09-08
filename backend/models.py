@@ -188,6 +188,23 @@ class CandidateSlot(BaseModel):
     reasons: List[str]
     score_breakdown: Dict[str, Any]
 
+class ZeroTrafficWindow(BaseModel):
+    timeline_id: str
+    start_time: str
+    end_time: str
+    total_free_minutes: int
+    total_free_label: str
+    category: str
+    is_daylight: bool
+    can_fit_block: bool
+    suggested_slot: str
+    suggested_start: str
+    suggested_end: str
+    preceding_traffic: str
+    next_traffic: str
+    trains_passing: int = 0
+    description: str
+
 class OptimizationResult(BaseModel):
     request_id: str
     asset_id: str
@@ -199,5 +216,7 @@ class OptimizationResult(BaseModel):
     priority: str
     recommended_slot: CandidateSlot
     all_evaluated_slots: List[CandidateSlot]
+    all_zero_traffic_windows: Optional[List[ZeroTrafficWindow]] = []
     summary_message: str
     ai_rationale: str
+

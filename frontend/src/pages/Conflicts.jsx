@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Search, ArrowRight, Cpu, Zap } from "lucide-react";
+import { AlertTriangle, ShieldAlert, CheckCircle2, Clock, Search, ArrowRight, Cpu, Zap, Sun, Moon, Sparkles, Check, ChevronRight } from "lucide-react";
 import { api } from "../services/api";
 
 export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentUser }) {
@@ -31,13 +31,18 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
     handleCheckSlot(); // Initial check with the exact SIH demo conflict!
   }, []);
 
-  const handleCheckSlot = async () => {
+  const handleCheckSlot = async (customStart, customEnd) => {
+    const s = customStart || testStart;
+    const e = customEnd || testEnd;
+    if (customStart) setTestStart(customStart);
+    if (customEnd) setTestEnd(customEnd);
+
     setChecking(true);
     try {
       const res = await api.checkSlot({
         section_id: testSection,
-        start_time: testStart,
-        end_time: testEnd,
+        start_time: s,
+        end_time: e,
         duration_hours: testDuration,
       });
       setCheckResult(res);
@@ -160,17 +165,21 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
                   ))}
                 </div>
 
-                {/* Automated Alternative Time Suggestion */}
+                {/* Primary Recommended Alternative Time Suggestion */}
                 {checkResult.suggested_alternative && (
                   <div className="p-3.5 bg-emerald-950/50 rounded-xl border border-emerald-500 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-400 font-mono">
-                        AI AUTOMATED ALTERNATIVE SEARCH
+                      <span className="text-[10px] font-bold uppercase text-emerald-400 font-mono flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-emerald-400" />
+                        AI PRIMARY RECOMMENDATION (OPTIMAL DAYLIGHT)
                       </span>
                       <p className="text-xs font-bold text-white mt-0.5">
-                        Clean Alternative Slot Found:{" "}
-                        <span className="text-cyan-300 font-mono text-sm">
+                        Clean Alternative Slot:{" "}
+                        <span className="text-cyan-300 font-mono text-sm font-extrabold">
                           {checkResult.suggested_alternative.start_time} – {checkResult.suggested_alternative.end_time}
+                        </span>
+                        <span className="ml-2 text-[11px] font-mono text-emerald-400">
+                          ({checkResult.suggested_alternative.total_free_label || "Clear Window"} • 0 Conflicts)
                         </span>
                       </p>
                       <p className="text-[11px] text-slate-300">
@@ -178,29 +187,153 @@ export default function Conflicts({ setActiveTab, onSelectRequestForAI, currentU
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        if (onSelectRequestForAI) onSelectRequestForAI("MR001");
-                        setActiveTab("planner");
-                      }}
-                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1 self-start sm:self-auto"
-                    >
-                      <Cpu className="w-3.5 h-3.5" />
-                      <span>Switch to AI Planner</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center space-x-2 self-start sm:self-auto">
+                      <button
+                        onClick={() => handleCheckSlot(checkResult.suggested_alternative.start_time, checkResult.suggested_alternative.end_time)}
+                        className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold text-xs flex items-center space-x-1 transition"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Apply Slot</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onSelectRequestForAI) onSelectRequestForAI("MR001");
+                          setActiveTab("planner");
+                        }}
+                        className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center space-x-1 shadow-md shadow-emerald-500/20 transition"
+                      >
+                        <Cpu className="w-3.5 h-3.5" />
+                        <span>Open in AI Planner</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* All Remaining Discovered Zero-Traffic Timelines */}
+                {checkResult.suggested_alternatives && checkResult.suggested_alternatives.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-rose-900/60 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-emerald-400" />
+                          All Clean Timelines Discovered ({checkResult.suggested_alternatives.length} Zero-Train Windows)
+                        </h3>
+                        <p className="text-[11px] text-slate-300">
+                          The AI scanned the complete 24h timetable across Section {testSection}. Below are all alternative windows where zero trains are running:
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-slate-900 text-cyan-300 border border-slate-800 self-start sm:self-auto">
+                        Section {testSection} • 24h Timeline Analysis
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {checkResult.suggested_alternatives.map((alt, idx) => {
+                        const isPrimary = alt.start_time === checkResult.suggested_alternative?.start_time;
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3.5 rounded-xl border flex flex-col justify-between transition ${
+                              isPrimary
+                                ? "bg-cyan-950/40 border-cyan-400/80 shadow-md shadow-cyan-950/50"
+                                : alt.is_daylight
+                                ? "bg-slate-900/90 border-slate-700 hover:border-cyan-500/50"
+                                : "bg-slate-950/90 border-slate-800 hover:border-slate-700"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded flex items-center gap-1 font-mono ${
+                                  alt.is_daylight
+                                    ? "bg-amber-950/80 text-amber-300 border border-amber-800"
+                                    : "bg-slate-900 text-slate-300 border border-slate-700"
+                                }`}>
+                                  {alt.is_daylight ? <Sun className="w-3 h-3 text-amber-400" /> : <Moon className="w-3 h-3 text-cyan-400" />}
+                                  {alt.category}
+                                </span>
+                                <span className="text-xs font-mono font-extrabold text-emerald-400">
+                                  {alt.total_free_label} Free
+                                </span>
+                              </div>
+
+                              <div className="mt-2.5">
+                                <span className="text-[10px] text-slate-400 block uppercase font-mono">Full Clean Gap:</span>
+                                <p className="text-xs font-extrabold text-white font-mono">
+                                  {alt.timeline_window}
+                                </p>
+                                <span className="text-[10px] text-slate-400 block uppercase font-mono mt-1.5">Suggested {testDuration}h Block:</span>
+                                <p className="text-sm font-mono font-extrabold text-cyan-300">
+                                  {alt.start_time} – {alt.end_time}
+                                </p>
+                              </div>
+
+                              <div className="mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400 space-y-0.5 font-mono">
+                                <p className="truncate" title={alt.preceding_traffic}><strong>Prev:</strong> {alt.preceding_traffic}</p>
+                                <p className="truncate" title={alt.next_traffic}><strong>Next:</strong> {alt.next_traffic}</p>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between gap-1.5">
+                              <button
+                                onClick={() => handleCheckSlot(alt.start_time, alt.end_time)}
+                                className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-bold border border-slate-700 transition flex items-center justify-center space-x-1"
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>Apply Slot</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (onSelectRequestForAI) onSelectRequestForAI("MR001");
+                                  setActiveTab("planner");
+                                }}
+                                title="Plan in AI Block Planner"
+                                className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition flex items-center justify-center flex-shrink-0"
+                              >
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500 text-emerald-300 flex items-center space-x-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-bold">ZERO CONFLICTS DETECTED</p>
-                  <p className="text-xs text-slate-300">
-                    Window {testStart} – {testEnd} on Section {testSection} is fully clear of train traffic and overlapping maintenance blocks.
-                  </p>
+              <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500 text-emerald-300 space-y-3">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-white">ZERO CONFLICTS DETECTED</p>
+                    <p className="text-xs text-slate-300">
+                      Window <strong className="text-cyan-300 font-mono">{testStart} – {testEnd}</strong> on Section <strong>{testSection}</strong> is completely clear of scheduled train traffic and overlapping maintenance blocks.
+                    </p>
+                  </div>
                 </div>
+
+                {/* Also show remaining clean timelines when in zero conflict state */}
+                {checkResult.suggested_alternatives && checkResult.suggested_alternatives.length > 0 && (
+                  <div className="pt-3 border-t border-emerald-800/60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block mb-2 font-mono">
+                      Other Clean Timelines Available Across Section {testSection}:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {checkResult.suggested_alternatives.map((alt, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleCheckSlot(alt.start_time, alt.end_time)}
+                          className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-[11px] font-mono text-slate-300 border border-slate-700 transition flex items-center space-x-1.5"
+                        >
+                          <span className="text-cyan-300 font-bold">{alt.start_time}–{alt.end_time}</span>
+                          <span className="text-slate-500">({alt.total_free_label})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

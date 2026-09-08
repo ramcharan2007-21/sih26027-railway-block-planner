@@ -16,7 +16,10 @@ import {
   ShieldCheck,
   RotateCcw,
   Lock,
-  Sliders
+  Sliders,
+  Sun,
+  Moon,
+  Sparkles
 } from "lucide-react";
 import { api } from "../services/api";
 
@@ -409,6 +412,191 @@ export default function BlockPlanner({ preselectedRequestId, setActiveTab, curre
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 24-Hour Zero-Traffic Timelines Discovery Hub */}
+      {optimizationResult?.all_zero_traffic_windows && optimizationResult.all_zero_traffic_windows.length > 0 && (
+        <div className="bg-slate-900/90 rounded-2xl p-5 border border-cyan-500/30 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  All Discovered 24-Hour Zero-Traffic Timelines (Section {optimizationResult.section_id})
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Dynamic timetable gap analysis discovered <span className="text-cyan-300 font-bold font-mono">{optimizationResult.all_zero_traffic_windows.length} continuous zero-train windows</span> across the 24-hour timetable. You can pick and approve any viable window below.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+              <span className="px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                Required Block: <strong className="text-amber-400">{optimizationResult.duration_hours}h</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {optimizationResult.all_zero_traffic_windows.map((win) => {
+              const isViable = win.is_viable;
+              const isRecommendedSlot =
+                optimizationResult.recommended_slot?.start_time === win.recommended_block_start &&
+                optimizationResult.recommended_slot?.end_time === win.recommended_block_end;
+              const isCurrentlySelected =
+                selectedSlotForDetail?.start_time === win.recommended_block_start &&
+                selectedSlotForDetail?.end_time === win.recommended_block_end;
+
+              let catIcon = <Sun className="w-3.5 h-3.5 text-amber-400" />;
+              let catBadge = "bg-amber-950/70 text-amber-300 border-amber-700/60";
+              if (win.category.includes("Early")) {
+                catIcon = <Sun className="w-3.5 h-3.5 text-orange-400" />;
+                catBadge = "bg-orange-950/70 text-orange-300 border-orange-700/60";
+              } else if (win.category.includes("Evening")) {
+                catIcon = <Moon className="w-3.5 h-3.5 text-indigo-400" />;
+                catBadge = "bg-indigo-950/70 text-indigo-300 border-indigo-700/60";
+              } else if (win.category.includes("Night")) {
+                catIcon = <Moon className="w-3.5 h-3.5 text-blue-400" />;
+                catBadge = "bg-blue-950/70 text-blue-300 border-blue-700/60";
+              }
+
+              return (
+                <div
+                  key={win.window_id}
+                  className={`p-3.5 rounded-xl border flex flex-col justify-between transition relative ${
+                    isCurrentlySelected
+                      ? "border-cyan-400 bg-cyan-950/20 ring-1 ring-cyan-400/50"
+                      : isViable
+                      ? "border-slate-800 bg-slate-950/70 hover:border-slate-700"
+                      : "border-slate-900 bg-slate-950/40 opacity-60"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${catBadge}`}>
+                        {catIcon}
+                        <span>{win.category}</span>
+                      </span>
+
+                      {isRecommendedSlot && (
+                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 tracking-wider">
+                          Primary AI
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mb-2">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wide block">Total Zero-Train Gap</span>
+                      <p className="text-base font-mono font-bold text-white">
+                        {win.gap_start} – {win.gap_end}
+                      </p>
+                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                        {win.gap_duration_hours}h continuous free ({win.gap_duration_minutes}m)
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded bg-slate-900/90 border border-slate-800 text-[11px] space-y-1 mb-3">
+                      <div className="flex justify-between items-center text-slate-300">
+                        <span className="text-slate-400">Proposed Slot:</span>
+                        <span className="font-mono font-bold text-cyan-300">
+                          {win.recommended_block_start} – {win.recommended_block_end}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 flex flex-col gap-0.5 pt-1 border-t border-slate-800">
+                        <span className="truncate" title={win.preceding_traffic}>
+                          Prev: <span className="text-slate-300">{win.preceding_traffic}</span>
+                        </span>
+                        <span className="truncate" title={win.succeeding_traffic}>
+                          Next: <span className="text-slate-300">{win.succeeding_traffic}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+                    {isViable ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setCustomStartTime(win.recommended_block_start);
+                            setCustomEndTime(win.recommended_block_end);
+                            const matchingCandidate = optimizationResult.all_evaluated_slots?.find(
+                              (s) => s.start_time === win.recommended_block_start && s.end_time === win.recommended_block_end
+                            );
+                            if (matchingCandidate) {
+                              setSelectedSlotForDetail(matchingCandidate);
+                            } else {
+                              setSelectedSlotForDetail({
+                                slot_id: win.window_id,
+                                start_time: win.recommended_block_start,
+                                end_time: win.recommended_block_end,
+                                duration_hours: optimizationResult.duration_hours,
+                                train_conflicts_count: 0,
+                                expected_delay_min: 0,
+                                optimization_score: 95,
+                                is_recommended: isRecommendedSlot,
+                                status: "FEASIBLE",
+                                conflicting_trains: [],
+                                score_breakdown: {
+                                  base_score: 65,
+                                  asset_priority_bonus: 25,
+                                  urgency_bonus: 15,
+                                  conflict_penalty: 0,
+                                  delay_penalty: 0,
+                                },
+                                reasons: [
+                                  `Discovered 24h zero-traffic gap (${win.gap_start} to ${win.gap_end}).`,
+                                  `Zero train conflicts or delays on Section ${optimizationResult.section_id}.`,
+                                  `Safe headway clearance before ${win.succeeding_traffic}.`,
+                                ],
+                              });
+                            }
+                          }}
+                          className={`w-full py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                            isCurrentlySelected
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50"
+                              : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+                          }`}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                          <span>{isCurrentlySelected ? "Active in Breakdown" : "Inspect This Timeline"}</span>
+                        </button>
+
+                        {currentUser?.username !== "engineer" && (
+                          <button
+                            onClick={() => {
+                              handleApproveBlock({
+                                slot_id: win.window_id,
+                                start_time: win.recommended_block_start,
+                                end_time: win.recommended_block_end,
+                                duration_hours: optimizationResult.duration_hours,
+                                train_conflicts_count: 0,
+                                expected_delay_min: 0,
+                                optimization_score: 95,
+                                is_recommended: isRecommendedSlot,
+                                status: "FEASIBLE",
+                                conflicting_trains: [],
+                              });
+                            }}
+                            className="w-full py-1.5 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1 transition"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve This Slot</span>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 text-center py-1">
+                        Window too short for {optimizationResult.duration_hours}h block
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
